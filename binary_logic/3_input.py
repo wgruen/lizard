@@ -14,13 +14,6 @@ from numpy import exp, array, random, dot, round
 from os import linesep
 
 
-#  0 0 1    0
-#  1 1 1    1
-#  1 0 1    1
-#  0 1 1    0
-
-
-
 class NeuralNetwork():
     def __init__(self):
         # Seed the random number generator, so it generates the same numbers
@@ -32,6 +25,7 @@ class NeuralNetwork():
         # and mean 0.
         self.synaptic_weights = 2 * random.random((3, 1)) - 1
 
+
     # The Sigmoid function, which describes an S shaped curve.
     # We pass the weighted sum of the inputs through this function to
     # normalise them between 0 and 1.
@@ -39,15 +33,18 @@ class NeuralNetwork():
     def __sigmoid(self, x):
         return 1 / (1 + exp(-x))
 
+
     # The derivative of the Sigmoid function.
     # This is the gradient of the Sigmoid curve.
     # It indicates how confident we are about the existing weight.
     def __sigmoid_derivative(self, x):
         return x * (1 - x)
 
+
     # We train the neural network through a process of trial and error.
     # Adjusting the synaptic weights each time.
     def train(self, training_set_inputs, training_set_outputs, number_of_training_iterations):
+
         print("Learning inputs:", linesep, training_set_inputs, linesep)
         print("Learning expected outputs:", linesep, training_set_outputs, linesep)
         
@@ -59,18 +56,22 @@ class NeuralNetwork():
             # Calculate the error (The difference between the desired output
             # and the predicted output).
             error = training_set_outputs - output
+
             #print("Learning error:", linesep, error, linesep)
+
 
             # Multiply the error by the input and again by the gradient of the Sigmoid curve.
             # This means less confident weights are adjusted more.
             # This means inputs, which are zero, do not cause changes to the weights.
             adjustment = dot(training_set_inputs.T, error * self.__sigmoid_derivative(output))
+
             #print("Learning adjustment:", linesep, adjustment, linesep)
             #print("Adustments:", linesep, adjustment, linesep)
 
             # Adjust the weights.
             self.synaptic_weights += adjustment
             #break
+
 
     # The neural network thinks.
     def think_brain(self, inputs):
@@ -85,13 +86,12 @@ class NeuralNetwork():
         #print("After sigmoid:", linesep, after_sigmoid, linesep)
         return after_sigmoid
 
+
     # The neural network thinks.
     def think(self, inputs):
         thinking_results = self.think_brain(inputs)
         return thinking_results, round(thinking_results)
         
-
-
 
 if __name__ == "__main__":
 
@@ -131,6 +131,7 @@ if __name__ == "__main__":
     for data in test_data:
         print("Considering new situation", data, "-> ",  neural_network.think(data))
     
+
 
     
     
