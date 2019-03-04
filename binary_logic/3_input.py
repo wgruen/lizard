@@ -3,7 +3,9 @@
 
 This learning problem has one synapsis, with three input variables
 
-This engine is limited and produces at least one error
+This engine is limited and produces at least one error.
+Also for the input of [0,0,0], it does out 0.5 consistently. 
+But in this case, the dot operation results in zero, so this may be ok with this simple machine.
 
 """
 #!/usr/bin/env python3
