@@ -1,3 +1,5 @@
+Deep Learning Project
+
 There are two machines in this directory. One machine with just one neuron and another with 7 neurons.
 
 a)
