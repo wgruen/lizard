@@ -4,9 +4,10 @@
 This learning problem has three neurons, with three input variables and
 three hidden neurons
 
-This engine is limited and produces at least one error.
-Also for the input of [0,0,0], it does out 0.5 consistently. 
-But in this case, the dot operation results in zero, so this may be ok with this simple machine.
+This engine does not produce errors anymore, probably due more neurons.
+Also for the input of [0,0,0], it properly identifies it. 
+
+This is not supposed to be perfect, but it seems to work well enough. 
 
 """
 #!/usr/bin/env python3
@@ -60,7 +61,7 @@ class NeuralNetwork():
   
     # We train the neural network through a process of trial and error.
     # Adjusting the synaptic weights each time.
-    def train(self, training_set_inputs, training_set_outputs, number_of_training_iterations):
+    def train(self, training_set, training_set_outputs, number_of_training_iterations):
         
         #print("Learning inputs:", linesep, training_set_inputs, linesep)
         #print("Learning inputs size: ", len(training_set_inputs))
@@ -68,9 +69,9 @@ class NeuralNetwork():
         
         for iteration in range(number_of_training_iterations):
             # walk through the training set
-            input_array_size = len(training_set_inputs)
+            input_array_size = len(training_set)
             for i in range(input_array_size):
-                array = training_set_inputs[i]
+                array = training_set[i]
                 expected_output = training_set_outputs[i]
                 #print("Expected output: ", expected_output, linesep)
             
@@ -173,7 +174,7 @@ class Neuron():
             
         self.internal_neuron_value = 0
         self.normalized_neuron_value = 0
-        self.training_rate = 0.5
+        self.training_rate = 0.2
         self.out_minus_target = 0
         self.derived_normalized_vs_value = 0
 
@@ -275,9 +276,6 @@ class Neuron():
         #print("Adjust parameters - new weights", linesep,  self.synaptic_weights) 
     
 
-
-
-
     # The neural network thinks.
     def think(self, inputs):
         thinking_results = self.think_brain(inputs)
@@ -306,7 +304,7 @@ if __name__ == "__main__":
 
     # Train the neural network using a training set.
     # Do it 10,000 times and make small adjustments each time.
-    neural_network.train(training_set_inputs, training_set_outputs, 10000)
+    neural_network.train(training_set_inputs, training_set_outputs, 20000)
 
     print("New synaptic weights after training:", linesep)
     print(neural_network.show_synaptic_weights(), linesep)

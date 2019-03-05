@@ -65,8 +65,8 @@ class NeuralNetwork():
             # This means inputs, which are zero, do not cause changes to the weights.
             adjustment = dot(training_set_inputs.T, error * self.__sigmoid_derivative(output))
 
-            print("Learning adjustment:", linesep, adjustment, linesep)
-            print("Adustments:", linesep, adjustment, linesep)
+            #print("Learning adjustment:", linesep, adjustment, linesep)
+            #print("Adustments:", linesep, adjustment, linesep)
 
             # Adjust the weights.
             self.synaptic_weights += adjustment
