@@ -1,2 +1,4 @@
 # lizard
-Deep Learning, the interesting stuff
+Deep Learning
+
+The interesting stuff
