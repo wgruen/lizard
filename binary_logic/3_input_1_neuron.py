@@ -80,10 +80,10 @@ class NeuralNetwork():
         # https://en.wikipedia.org/wiki/Dot_product
         
         dot_product = dot(inputs, self.synaptic_weights)
-        #print("Dot product:", linesep, dot_product, linesep)
+        print("Dot product:", linesep, dot_product, linesep)
         
         after_sigmoid = self.__sigmoid(dot_product)
-        #print("After sigmoid:", linesep, after_sigmoid, linesep)
+        print("After sigmoid:", linesep, after_sigmoid, linesep)
         return after_sigmoid
 
 
