@@ -70,7 +70,7 @@ class NeuralNetwork():
 
             # Adjust the weights.
             self.synaptic_weights += adjustment
-            #break
+            break
 
 
     # The neural network thinks.
@@ -128,8 +128,8 @@ if __name__ == "__main__":
                        [1, 1, 0],
                        [1, 1, 1]])
     
-    for data in test_data:
-        print("Considering new situation", data, "-> ",  neural_network.think(data))
+    #for data in test_data:
+        #print("Considering new situation", data, "-> ",  neural_network.think(data))
     
 
 
