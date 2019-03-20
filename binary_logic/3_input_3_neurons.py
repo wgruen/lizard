@@ -14,7 +14,8 @@ This is not supposed to be perfect, but it seems to work well enough.
 
 from numpy import exp, array, random, dot, round
 from os import linesep
-
+import argparse
+import sys
 
 class NeuralNetwork():
     def __init__(self, number_of_inputs, number_of_input_neurons):
@@ -290,6 +291,21 @@ class Neuron():
         
 
 if __name__ == "__main__":
+	
+# initiate the parser
+    parser = argparse.ArgumentParser()  
+    parser.add_argument("-v", "--version", help="show program version", action="store_true")
+    parser.add_argument("-t", "--train", help="train and save parameters")
+    parser.add_argument("-r", "--run", help="load parameters and run")
+   
+
+# read arguments from the command line
+    args = parser.parse_args()
+
+# check for --version or -V
+    if args.version:
+        print("this is myprogram version 0.1")
+        sys.exit()
 
     # The training set. We have 5 examples, each consisting of 3 input values
     # and 1 expectd output value.
@@ -311,7 +327,7 @@ if __name__ == "__main__":
 
     # Train the neural network using a training set.
     # Do it 10,000 times and make small adjustments each time.
-    neural_network.train(training_set_inputs, training_set_outputs, 20000)
+    neural_network.train(training_set_inputs, training_set_outputs, 10000)
 
     print("New synaptic weights after training:", linesep)
     print(neural_network.show_synaptic_weights(), linesep)
