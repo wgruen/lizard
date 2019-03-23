@@ -233,14 +233,14 @@ class Neuron():
 
     # We train the neural network through a process of trial and error.
     # Adjusting the synaptic weights each time.
-    def train_adjust_synaptic_weights_for_output_neuron(self, output_neuron_value, ):
+    def train_adjust_synaptic_weights_for_output_neuron(self, expected_output):
         # https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/
         # https://en.wikipedia.org/wiki/Logistic_function#Derivative
         #print("Adjust parameters - input values", linesep,  self.training_set_inputs)
         #print(linesep, "Adjust parameters - weights", linesep,  self.synaptic_weights)
         
         
-        self.out_minus_target = -1 * (output_neuron_value - self.normalized_neuron_value)
+        self.out_minus_target = -1 * (expected_output - self.normalized_neuron_value)
         self.derived_normalized_vs_value = self.normalized_neuron_value * ( 1 - self.normalized_neuron_value)
         
         for i in range(0, len(self.synaptic_weights)):
@@ -273,7 +273,8 @@ class Neuron():
             weight = self.synaptic_weights[i]
             derived_value_vs_parameter = self.training_set_inputs[i]
             partial_derived_for_parameter = \
-                self.out_minus_target * weight * \
+                self.out_minus_target * \
+                weight * \
                 self.derived_normalized_vs_value * \
                 derived_value_vs_parameter
                 
