@@ -15,6 +15,7 @@ This is not supposed to be perfect, but it seems to work well enough.
 from numpy import exp, array, random, dot, round
 import numpy as np
 from os import linesep
+import os
 import sys
 import pprint
 
@@ -24,7 +25,9 @@ class NeuralNetwork():
         
         # Seed the random number generator, so it generates the same numbers
         # every time the program runs.
-        random.seed(1)
+        random.seed(132)
+        
+        self.training_rate = 0.5
         
         self.neuron_weigths_holder = []
         self.neuron_value_holder = []
@@ -173,8 +176,8 @@ class NeuralNetwork():
                 self.caclulate_backward_pass_for_hidden_layers(training_set_outputs[i])
             
                 self.show_matrices()
-                break
-            break
+                #break
+            #break
             
   
     # Pass inputs through our neural network (our single neuron).
@@ -222,9 +225,11 @@ class NeuralNetwork():
                 
           
                 self.neuron_normalized_value_holder[next_layer_index][i_neuron] = self.__sigmoid(self.neuron_value_holder[next_layer_index][i_neuron])
-                print("think - Neuron Normalized Value after sigmoid: ", self.neuron_normalized_value_holder[next_layer_index][i_neuron])
+                #print("think - Neuron Normalized Value after sigmoid: ", self.neuron_normalized_value_holder[next_layer_index][i_neuron])
                 
                 #break
+                
+        return self.neuron_normalized_value_holder[-1]
       
          
     def caclulate_the_error(self, training_set_outputs):
@@ -233,8 +238,8 @@ class NeuralNetwork():
         
         self.total_error = 0
         
-        print("caclulate_the_error - Output neuron: ", self.neuron_normalized_value_holder[-1])
-        print("caclulate_the_error - Expected output: ", training_set_outputs)
+        #print("caclulate_the_error - Output neuron: ", self.neuron_normalized_value_holder[-1])
+        #print("caclulate_the_error - Expected output: ", training_set_outputs)
             
         out_layer = self.neuron_normalized_value_holder[-1]
         num_of_neruons_in_layer_out = len(self.neuron_normalized_value_holder[-1])
@@ -246,13 +251,13 @@ class NeuralNetwork():
             self.output_neuron_error_value_holder[i_neuron] = neuron_error
             self.total_error += neuron_error
             
-        print("caclulate_the_error - Total error: ", self.total_error)
+        #print("caclulate_the_error - Total error: ", self.total_error)
             
             
         
     def calulate_needed_values_for_backpass(self, training_set_outputs):
     
-        print("\ncalulate_nvfbp - parameter training_set_outputs : ", training_set_outputs)
+        #print("\ncalulate_nvfbp - parameter training_set_outputs : ", training_set_outputs)
         
         # skip the input layer
         # the derivatve of the the neuron, with respect to the neuron's value
@@ -306,15 +311,15 @@ class NeuralNetwork():
         
    
         index_to_output_neurons = len(self.neuron_normalized_value_holder)
-        print("Backpass output neurons - index_to_output_neurons: ", index_to_output_neurons)
+        #print("Backpass output neurons - index_to_output_neurons: ", index_to_output_neurons)
         
         for current_layer_index in range(index_to_output_neurons-1, index_to_output_neurons-2, -1):
          
             num_neurons_current_layer = len(self.neuron_normalized_value_holder[current_layer_index])
             num_neurons_in_previous_layer = len(self.neuron_normalized_value_holder[current_layer_index - 1])
             
-            print("Backpass output neurons - num_neurons_current_layer: ", num_neurons_current_layer)
-            print("Backpass output neurons - num_neurons_in_previous_layer: ", num_neurons_in_previous_layer)
+            #print("Backpass output neurons - num_neurons_current_layer: ", num_neurons_current_layer)
+            #print("Backpass output neurons - num_neurons_in_previous_layer: ", num_neurons_in_previous_layer)
             
             
             # For each Neuron in the current layer, there is a parameter for the 
@@ -360,8 +365,9 @@ class NeuralNetwork():
                 
                     # Adjust the parameter
                     # The parameter belongs to the currrent neuron
-                    print("Backpass output layer - weight before adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][p_index])
-                    self.neuron_weigths_holder[current_layer_index][i_neuron][p_index] -= deriv_10
+                    print("Backpass output layer - weight before adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][p_index])       
+                    current_weight = self.neuron_weigths_holder[current_layer_index][i_neuron][p_index]                                      
+                    self.neuron_weigths_holder[current_layer_index][i_neuron][p_index] = current_weight - self.training_rate * deriv_10
                     print("Backpass output layer - weight after adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][p_index])
                     
                     
@@ -442,7 +448,9 @@ class NeuralNetwork():
                     # Adjust the parameter
                     # The parameter belongs to the currrent neuron
                     print("Backpass hidden layers - Backpass weight before adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter])
-                    self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter] -= deriv_10
+                    current_weight = self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter]
+                    
+                    self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter] = current_weight - self.training_rate * deriv_10
                     print("Backpass hidden layers - Backpass weight after adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter])
                     
 
@@ -454,25 +462,34 @@ if __name__ == "__main__":
     # The training set. We have 5 examples, each consisting of 3 input values
     # and 1 expectd output value.
     training_set_inputs = array([[0, 0, 1], 
-                                 [0, 1, 0],
-                                 [0, 1, 1],
-                                 [1, 0, 0]])
+                                 [1, 1, 0],
+                                 [1, 0, 0],
+                                 [0, 1, 1]])
     
     training_set_outputs = array([[0,
                                    1,
-                                   1,
-                                   0]]).T
+                                   0,
+                                   1]]).T
     
     
     #Intialise a single neuron neural network.
     #number_of_input_neurons, number_of_hidden_neurons, number_of_hidden_layers, number_of_outputs)
-    neural_network = NeuralNetwork(3, 4, 1, 1)
+    neural_network = NeuralNetwork(3, 3, 1, 1)
+    
+    
+  
     print("Random starting synaptic weights:", linesep)
     print(neural_network.show_synaptic_weights(), linesep)
+    
+    
+    #sys.stdout = open(os.devnull, 'w')
 
     # Train the neural network using a training set.
     # Do it 10,000 times and make small adjustments each time.
     neural_network.train(training_set_inputs, training_set_outputs, 10000)
+    
+    #sys.stdout = sys.__stdout__
+    
 
     print("New synaptic weights after training:", linesep)
     print(neural_network.show_synaptic_weights(), linesep)
