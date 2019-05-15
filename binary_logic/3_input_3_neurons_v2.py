@@ -112,7 +112,7 @@ class NeuralNetwork():
         
 
     def show_matrices(self):
-       # return 
+        return 
         pp = pprint.PrettyPrinter(indent=4)
         print("\n\n")
         print("\nweights holder:")
@@ -262,35 +262,35 @@ class NeuralNetwork():
         # skip the input layer
         # the derivatve of the the neuron, with respect to the neuron's value
         for current_layer_index in range(1, len(self.neuron_normalized_value_holder)):
-            print("\ncalulate_nvfbp - current_layer_index: ", current_layer_index)
+            #print("\ncalulate_nvfbp - current_layer_index: ", current_layer_index)
             
             # for each neuron
             for i_neuron in range(0, len(self.neuron_normalized_value_holder[current_layer_index])):         
-                print("calulate_nvfbp - next neuron index: ", i_neuron)
+                #print("calulate_nvfbp - next neuron index: ", i_neuron)
                 
                 neuron_out = self.neuron_normalized_value_holder[current_layer_index][i_neuron]
                 
                 self.neuron_derivative_value_holder[current_layer_index][i_neuron] = \
                         neuron_out * ( 1 - neuron_out)
-                print("calulate_nvfbp - derivtive of the Neuron's output with respect to the neuron's value: ", self.neuron_derivative_value_holder[current_layer_index][i_neuron])
+                #print("calulate_nvfbp - derivtive of the Neuron's output with respect to the neuron's value: ", self.neuron_derivative_value_holder[current_layer_index][i_neuron])
     
     
         # the derivatve of the Total error  with respect to the neuron's output            
         # for the output neurons only  
         number_of_output_neurons = len(self.neuron_normalized_value_holder[-1])
-        print("\n\ncalulate_nvfbp - index_to_output_neurons: ", number_of_output_neurons)
+        #print("\n\ncalulate_nvfbp - index_to_output_neurons: ", number_of_output_neurons)
       
         
         for i_neuron in range(0, number_of_output_neurons):
             
-            print("calulate_nvfbp - Next output neuron: ", i_neuron)
+            #print("calulate_nvfbp - Next output neuron: ", i_neuron)
             neuron_out = self.neuron_normalized_value_holder[-1][i_neuron]
-            print("calulate_nvfbp - neuron out: ", neuron_out)
+            #print("calulate_nvfbp - neuron out: ", neuron_out)
             
             self.output_neuron_out_minus_target_holder[i_neuron] =  \
                 neuron_out - training_set_outputs[i_neuron]
                 
-            print("calulate_nvfbp - derivtive of the Total error with respect to the neuron's output: ", self.neuron_derivative_value_holder[current_layer_index][i_neuron])
+            #print("calulate_nvfbp - derivtive of the Total error with respect to the neuron's output: ", self.neuron_derivative_value_holder[current_layer_index][i_neuron])
             
             self.neuron_output_partial_product_holder[i_neuron] = \
                 self.output_neuron_out_minus_target_holder[i_neuron] * self.neuron_derivative_value_holder[-1][i_neuron]
@@ -331,44 +331,44 @@ class NeuralNetwork():
             
             # For each neuro in the current layer
             for i_neuron in range(0, num_neurons_current_layer):
-                print("\n\nBackpass output neurons - neuron :", i_neuron)
+                #print("\n\nBackpass output neurons - neuron :", i_neuron)
         
                          
                 # the partial derivative of the total error with respect to 
                 # the the Ouput Neuron's output
                 deriv_1 = self.output_neuron_out_minus_target_holder[i_neuron]
-                print("Backpass output neurons - deriv_1: ", deriv_1)
+                #print("Backpass output neurons - deriv_1: ", deriv_1)
             
                 # the partial derivative of the neuron's output with respect to 
                 # the neuron's value
                 deriv_2 = self.neuron_derivative_value_holder[current_layer_index][i_neuron]
-                print("Backpass output neurons - deriv_2: ", deriv_2)
+                #print("Backpass output neurons - deriv_2: ", deriv_2)
                 
                 # num of weights per neuron
                 num_weights_in_neuron = len(self.neuron_weigths_holder[current_layer_index][i_neuron])
-                print("Backpass output neurons - num_weights_of_parameters_in_neuron: ", num_weights_in_neuron)
+                #print("Backpass output neurons - num_weights_of_parameters_in_neuron: ", num_weights_in_neuron)
                 
                 # For each parameter in a neuron
                 for p_index in range(0, num_weights_in_neuron):
-                    print("\nBackpass output neurons - parameter: ", p_index)
+                    #print("\nBackpass output neurons - parameter: ", p_index)
                     
                     # the partial derivative of the neuron's value with respect to
                     # one input parameter
                     # it will be the output of the previous neuron for that parameter
                     deriv_3 = self.neuron_normalized_value_holder[current_layer_index - 1][p_index]
-                    print("Backpass output neurons - deriv_3: ", deriv_3)
+                    #print("Backpass output neurons - deriv_3: ", deriv_3)
                     
                     # the partial derivative of the total error with respect to
                     # the parameter m
                     deriv_10 = deriv_1 * deriv_2 * deriv_3
-                    print("Backpass output neurons - partial derivativ 10: ", deriv_10 )
+                    #print("Backpass output neurons - partial derivativ 10: ", deriv_10 )
                 
                     # Adjust the parameter
                     # The parameter belongs to the currrent neuron
-                    print("Backpass output layer - weight before adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][p_index])       
+                    #print("Backpass output layer - weight before adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][p_index])       
                     current_weight = self.neuron_weigths_holder[current_layer_index][i_neuron][p_index]                                      
                     self.neuron_weigths_holder[current_layer_index][i_neuron][p_index] = current_weight - self.training_rate * deriv_10
-                    print("Backpass output layer - weight after adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][p_index])
+                    #print("Backpass output layer - weight after adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][p_index])
                     
                     
     ''' this works for one hidden layer only '''            
@@ -378,7 +378,7 @@ class NeuralNetwork():
         # Walking the layer backwwards
 
         index_to_output_neurons = len(self.neuron_normalized_value_holder)
-        print("\n\nBackpass hidden layers - index_to_output_neurons: ", index_to_output_neurons)
+        #print("\n\nBackpass hidden layers - index_to_output_neurons: ", index_to_output_neurons)
         
         # hidden layers start at layer -2 and do not include the first layer zero
         for current_layer_index in range(1, 0, -1):
@@ -390,18 +390,18 @@ class NeuralNetwork():
             num_neurons_current_layer = len(self.neuron_normalized_value_holder[current_layer_index])
             num_neurons_in_previous_layer = len(self.neuron_normalized_value_holder[current_layer_index - 1])
             
-            print("Backpass hidden layers - num_neurons_current_layer: ", num_neurons_current_layer)
-            print("Backpass hidden layers - num_neurons_in_previous_layer: ", num_neurons_in_previous_layer)
+            #print("Backpass hidden layers - num_neurons_current_layer: ", num_neurons_current_layer)
+            #print("Backpass hidden layers - num_neurons_in_previous_layer: ", num_neurons_in_previous_layer)
             
             #self.show_matrices()
     
             # For each neuro in the current layer
             for i_neuron in range(0, num_neurons_current_layer):
-                print("\n\nBackpass hidden layers - neuron :", i_neuron)
+                #print("\n\nBackpass hidden layers - neuron :", i_neuron)
             
                 # the derivative of the Total Error with respect to the neruon's output              
                 number_of_output_neurons = len(self.neuron_normalized_value_holder[-1])
-                print("Backpass hidden layers  - number_of_output_neurons: ", number_of_output_neurons)
+                #print("Backpass hidden layers  - number_of_output_neurons: ", number_of_output_neurons)
     
                 deriv_total_error_wrt_neurons_output = 0
                 for i_output in range(0, number_of_output_neurons):
@@ -409,49 +409,49 @@ class NeuralNetwork():
                     # the derivative of the Output Neruon's value with respect to the previous neuron's output
                     # is the weight for this specfic neuron
                     ouput_neuron_weight = self.neuron_weigths_holder[-1][i_output][i_neuron]
-                    print("Backpass hidden layers  - ouput_neuron_weight: ", ouput_neuron_weight) 
+                    #print("Backpass hidden layers  - ouput_neuron_weight: ", ouput_neuron_weight) 
                     
                     
                     # the partial derivative of te next Neurons oupput with respect to the neurons value
                     deriv11 =  self.neuron_output_partial_product_holder[i_output] * ouput_neuron_weight
                     deriv_total_error_wrt_neurons_output += deriv11
                 
-                print("Backpass hidden layers  - deriv_total_error_wrt_neurons_output: ", deriv_total_error_wrt_neurons_output)   
+                #print("Backpass hidden layers  - deriv_total_error_wrt_neurons_output: ", deriv_total_error_wrt_neurons_output)   
                 
                 # num of weights per neuron
                 num_weights_in_neuron = len(self.neuron_weigths_holder[current_layer_index][i_neuron])              
-                print("Backpass hidden layers  - num_weights_of_parameters_in_neuron: ", num_weights_in_neuron)
+                #print("Backpass hidden layers  - num_weights_of_parameters_in_neuron: ", num_weights_in_neuron)
             
                 # For each parameter in a neuron
                 for i_parameter in range(0, num_weights_in_neuron):
-                    print("Backpass hidden layers - neuron %d   parameter %d " %(i_neuron, i_parameter))
+                    #print("Backpass hidden layers - neuron %d   parameter %d " %(i_neuron, i_parameter))
         
         
                     # the partial derivative of the neuron's output with respect to
                     # neuron's value
                     deriv_1 = self.neuron_derivative_value_holder[current_layer_index][i_neuron]
-                    print("Backpass hidden layers - deriv_1: ", deriv_1)
+                    #print("Backpass hidden layers - deriv_1: ", deriv_1)
                     
                     # the partial derivative of the neuron's value with respect to
                     # one input parameter
                     # it will be the output of the previous neuron for that parameter
                     deriv_2 = self.neuron_normalized_value_holder[current_layer_index - 1][i_parameter]
-                    print("Backpass hidden layers - deriv_2: ", deriv_2)
+                    #print("Backpass hidden layers - deriv_2: ", deriv_2)
                     
                     #the derivative of the neruo
                     
                     # the partial derivative of the total error with respect to
                     # the parameter m
                     deriv_10 = deriv_1 * deriv_2 * deriv_total_error_wrt_neurons_output
-                    print("Backpass hidden layers - partial derivativ 10: ", deriv_10 )
+                    #print("Backpass hidden layers - partial derivativ 10: ", deriv_10 )
                 
                     # Adjust the parameter
                     # The parameter belongs to the currrent neuron
-                    print("Backpass hidden layers - Backpass weight before adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter])
+                    #print("Backpass hidden layers - Backpass weight before adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter])
                     current_weight = self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter]
                     
                     self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter] = current_weight - self.training_rate * deriv_10
-                    print("Backpass hidden layers - Backpass weight after adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter])
+                    #print("Backpass hidden layers - Backpass weight after adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter])
                     
 
                 
@@ -463,18 +463,18 @@ if __name__ == "__main__":
     # and 1 expectd output value.
     training_set_inputs = array([[0, 0, 1], 
                                  [1, 1, 0],
-                                 [1, 0, 0],
+                                 [1, 0, 1],
                                  [0, 1, 1]])
     
     training_set_outputs = array([[0,
                                    1,
-                                   0,
-                                   1]]).T
+                                   1,
+                                   0]]).T
     
     
     #Intialise a single neuron neural network.
     #number_of_input_neurons, number_of_hidden_neurons, number_of_hidden_layers, number_of_outputs)
-    neural_network = NeuralNetwork(3, 3, 1, 1)
+    neural_network = NeuralNetwork(3, 4, 1, 1)
     
     
   
