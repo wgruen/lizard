@@ -26,7 +26,7 @@ class NeuralNetwork():
         
         # Seed the random number generator, so it generates the same numbers
         # every time the program runs.
-        random.seed(132)
+        random.seed()
         
         self.training_rate = 0.5
         
@@ -476,6 +476,7 @@ if __name__ == "__main__":
     
     #Intialise a single neuron neural network.
     #number_of_input_neurons, number_of_hidden_neurons, number_of_hidden_layers, number_of_outputs)
+    # cueently only on hidden layer is supported
     neural_network = NeuralNetwork(3, 4, 1, 1)
     
     
@@ -497,7 +498,7 @@ if __name__ == "__main__":
     print(neural_network.show_synaptic_weights(), linesep)
     print("All matrixes: ", neural_network.show_matrices())
     
-    
+    '''
     with open("neural_net_trained", 'bw+') as outfile:
         pickle.dump(neural_network.training_rate, outfile)
         pickle.dump(neural_network.neuron_weigths_holder, outfile)
@@ -520,7 +521,7 @@ if __name__ == "__main__":
     pickle_data = pickle.load(pickle_in)
     print(pickle_data)
     
-        
+ '''  
     
 
     # Test the neural network with a new situation.
