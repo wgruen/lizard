@@ -19,6 +19,7 @@ import os
 import sys
 import pprint
 import pickle
+from copy import deepcopy
 
 
 class NeuralNetwork():
@@ -37,12 +38,19 @@ class NeuralNetwork():
         self.output_neuron_error_value_holder = []
         self.neuron_output_partial_product_holder = []
         self.output_neuron_out_minus_target_holder = []
+        
+        # the weights are supposed to be updated only after
+        # the entire adjustments of the weigths (back propagation)
+        # has finished. so we need one more container
+        # to keep the new weights temporarily
+        self.neuron_updated_weigths_holder = []
 
 
         
         # 1st the input neurons
         weights = np.full(number_of_input_neurons, 999)
         self.neuron_weigths_holder.append(weights) 
+        self.neuron_updated_weigths_holder.append(deepcopy(weights))
         
         value = np.full(number_of_input_neurons, 999) 
         self.neuron_value_holder.append(value)  
@@ -60,6 +68,7 @@ class NeuralNetwork():
         # 1st hidden layer uses the inout neurons and the number can be different           
         weights = np.random.rand(number_of_hidden_neurons, number_of_input_neurons)
         self.neuron_weigths_holder.append(weights) 
+        self.neuron_updated_weigths_holder.append(deepcopy(weights))
         
         value = np.full(number_of_hidden_neurons, 8.2) 
         self.neuron_value_holder.append(value)
@@ -74,6 +83,7 @@ class NeuralNetwork():
         for i in range(0, number_of_hidden_layers -1):
             weights = np.random.rand(number_of_hidden_neurons, number_of_hidden_neurons)
             self.neuron_weigths_holder.append(weights) 
+            self.neuron_updated_weigths_holder.append(deepcopy(weights))
         
             value = np.zeros(number_of_hidden_neurons) 
             self.neuron_value_holder.append(value)
@@ -87,6 +97,7 @@ class NeuralNetwork():
         #The output layer
         weights = np.random.rand(number_of_outputs, number_of_hidden_neurons)
         self.neuron_weigths_holder.append(weights) 
+        self.neuron_updated_weigths_holder.append(deepcopy(weights))
         
         value = np.zeros(number_of_outputs) 
         self.neuron_value_holder.append(value)
@@ -135,6 +146,11 @@ class NeuralNetwork():
            
     def show_synaptic_weights(self):
         print("Weights holder: ", self.neuron_weigths_holder)
+        
+    def copy_new_parameters_into_neural_network(self):
+        self.neuron_weigths_holder = deepcopy(self.neuron_updated_weigths_holder)
+        
+        
     
     
        # The Sigmoid function, which describes an S shaped curve.
@@ -175,6 +191,8 @@ class NeuralNetwork():
                 self.caclulate_backward_pass_for_ouput_neurons(training_set_outputs[i])
                 
                 self.caclulate_backward_pass_for_hidden_layers(training_set_outputs[i])
+                
+                self.copy_new_parameters_into_neural_network()
             
                 self.show_matrices()
                 #break
@@ -368,7 +386,7 @@ class NeuralNetwork():
                     # The parameter belongs to the currrent neuron
                     #print("Backpass output layer - weight before adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][p_index])       
                     current_weight = self.neuron_weigths_holder[current_layer_index][i_neuron][p_index]                                      
-                    self.neuron_weigths_holder[current_layer_index][i_neuron][p_index] = current_weight - self.training_rate * deriv_10
+                    self.neuron_updated_weigths_holder[current_layer_index][i_neuron][p_index] = current_weight - self.training_rate * deriv_10
                     #print("Backpass output layer - weight after adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][p_index])
                     
                     
@@ -451,7 +469,7 @@ class NeuralNetwork():
                     #print("Backpass hidden layers - Backpass weight before adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter])
                     current_weight = self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter]
                     
-                    self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter] = current_weight - self.training_rate * deriv_10
+                    self.neuron_updated_weigths_holder[current_layer_index][i_neuron][i_parameter] = current_weight - self.training_rate * deriv_10
                     #print("Backpass hidden layers - Backpass weight after adjustment: ", self.neuron_weigths_holder[current_layer_index][i_neuron][i_parameter])
                     
 
@@ -478,7 +496,7 @@ if __name__ == "__main__":
     #number_of_input_neurons, number_of_hidden_neurons, number_of_hidden_layers, number_of_outputs)
     # cueently only on hidden layer is supported
     neural_network = NeuralNetwork(3, 4, 1, 1)
-    
+
     
   
     print("Random starting synaptic weights:", linesep)
@@ -489,9 +507,8 @@ if __name__ == "__main__":
 
     # Train the neural network using a training set.
     # Do it 10,000 times and make small adjustments each time.
-    neural_network.train(training_set_inputs, training_set_outputs, 1000)
-    
-    #sys.stdout = sys.__stdout__
+    neural_network.train(training_set_inputs, training_set_outputs, 6000)
+    #sys.stdout = sys.__stdout_
     
 
     print("New synaptic weights after training:", linesep)
