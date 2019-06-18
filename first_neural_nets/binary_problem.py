@@ -13,15 +13,7 @@ from os import linesep
 cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"lib")))
 if cmd_subfolder not in sys.path:
     sys.path.append(cmd_subfolder)
-    
-    
-sys.path.append('.')
-    
 print(sys.path)
-
-print(cmd_subfolder)
-
-
 
 
 from nr_1_hidden_layer import NeuralNetwork
