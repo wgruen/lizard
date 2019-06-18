@@ -10,7 +10,7 @@ from os import linesep
 
 
 # use this if you want to include modules from a subfolder
-cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"lib")))
+cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"../lib")))
 if cmd_subfolder not in sys.path:
     sys.path.append(cmd_subfolder)
 print(sys.path)
