@@ -8,21 +8,33 @@ from numpy import exp, array, random, dot, round
 import numpy as np
 from os import linesep
 
+print("pwd: " + os.getcwd())
 
 # use this if you want to include modules from a subfolder
-cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"../lib")))
+cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0])) + "../")
+print("new sub folder: " + cmd_subfolder)
+print("pardir: " + os.pardir)
+
+
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+
+
 if cmd_subfolder not in sys.path:
-    sys.path.append(cmd_subfolder)
+    print("new sub folder: " + cmd_subfolder)
+    sys.path.insert(0, cmd_subfolder)
 print(sys.path)
 
 
-from nr_1_hidden_layer import NeuralNetwork
+
+from nr_lib import nr_1_hidden_layer as nr
 
 
-
-if __name__ == "__main__":
-
-    # The training set. We have 5 examples, each consisting of 3 input values
+def main():
+    
+    
+    # The training set. We have 4 examples, each consisting of 3 input values
     # and 1 expectd output value.
     training_set_inputs = array([[0, 0, 1], 
                                  [1, 1, 0],
@@ -39,7 +51,15 @@ if __name__ == "__main__":
     #Intialise a single neuron neural network.
     #number_of_input_neurons, number_of_hidden_neurons, number_of_hidden_layers, number_of_outputs)
     # cueently only on hidden layer is supported
-    neural_network = NeuralNetwork(3, 4, 1, 1)
+    number_of_input_neurons = 3
+    number_of_hidden_neurons = 4
+    number_of_hidden_layers = 1
+    number_of_outputs_neurons = 1
+    neural_network = nr.NeuralNetwork(
+            number_of_input_neurons,
+            number_of_hidden_neurons, 
+            number_of_hidden_layers, 
+            number_of_outputs_neurons)
 
     
   
@@ -98,9 +118,10 @@ if __name__ == "__main__":
     for data in test_data:
         print("Considering new situation", data, "-> ",  neural_network.think(data))
     
-
-
     
+    
+if __name__ == '__main__':
+    main()
     
     
     
