@@ -122,9 +122,11 @@ class NeuralNetwork():
   
         
         
-
+    # this is bypassed for normal operation
+    # and mainly used for debugging
     def show_matrices(self):
-        return 
+        #return
+    
         pp = pprint.PrettyPrinter(indent=4)
         print("\n\n")
         print("\nweights holder:")
@@ -178,13 +180,13 @@ class NeuralNetwork():
                 # think
                 self.think(array)
                
-                self.show_matrices()
+                #self.show_matrices()
                      
                 # Calculate the error (The difference between the desired output
                 # and the predicted output).
                 self.caclulate_the_error(training_set_outputs[i])
                 
-                self.show_matrices()
+                #self.show_matrices()
                 
                 self.calulate_needed_values_for_backpass(training_set_outputs[i])
                 
@@ -194,7 +196,7 @@ class NeuralNetwork():
                 
                 self.copy_new_parameters_into_neural_network()
             
-                self.show_matrices()
+                #self.show_matrices()
                 #break
             #break
             
