@@ -1,13 +1,43 @@
 # -*- coding: utf-8 -*-
 """
 
-This learning problem has three neurons, with three input variables and
-three hidden neurons
+This learning problem can have :
+    multiple input neurons
+    one hidden layer
+    multiple hidden neurons in the hidden layer
+    multiple output neurons
 
-This engine does not produce errors anymore, probably due more neurons.
-Also for the input of [0,0,0], it properly identifies it. 
 
-This is not supposed to be perfect, but it seems to work well enough. 
+    # The training set is epxected in this format 
+    training_set_inputs = array([[0.4, 0.02, .099], 
+                                 [0.97, 0.98, 0.3],
+                                 [0.98, 0.04, 0.94],
+                                 [0.09, 0.93, 0.94]])
+
+    training_set_outputs = array([[0.01,
+                                   0.99,
+                                   0.99,
+                                   0.01]]).T
+
+    #Example to save and load
+    np.savetxt("example_1.data.trainwolf.cvs", training_set_inputs2, fmt="%1.2f")
+    training_set_inputs = np.loadtxt("example_1.data.train.cvs")
+    
+    
+    # Test the neural network with a new situation.
+    test_data = array([[0.04, 0.06, 0.03], 
+                       [0.2, 0.12, 1.2],
+                       [0.12, 0.93, 0.06],
+                       [0.1, 1.08, 0.96],
+                       [0.89, 0.1, 0.06],
+                       [1.03, 0.08, 1.1],
+                       [1.05, 1.02, 0.09],
+                       [1.03, 0.95, 0.91]])
+    
+    
+    
+    np.savetxt("example_1.data.validate.cvs", test_data, fmt="%1.2f")
+   
 
 """
 #!/usr/bin/env python3
