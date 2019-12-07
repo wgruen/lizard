@@ -23,6 +23,7 @@ palette = np.array([["red"], # index 0: red
             
                     ])
 
+
 # create random  data set 
 # 100 rows, 2 columns
 X= -2 * np.random.rand(100,2)
