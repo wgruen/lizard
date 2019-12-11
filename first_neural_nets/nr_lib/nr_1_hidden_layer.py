@@ -20,8 +20,8 @@ This learning problem can have :
                                    0.01]]).T
 
     #Example to save and load
-    np.savetxt("example_1.data.trainwolf.cvs", training_set_inputs2, fmt="%1.2f")
-    training_set_inputs = np.loadtxt("example_1.data.train.cvs")
+    np.savetxt("example_1.data.trainwolf.csv", training_set_inputs2, fmt="%1.2f")
+    training_set_inputs = np.loadtxt("example_1.data.train.csv")
     
     
     # Test the neural network with a new situation.
@@ -36,7 +36,7 @@ This learning problem can have :
     
     
     
-    np.savetxt("example_1.data.validate.cvs", test_data, fmt="%1.2f")
+    np.savetxt("example_1.data.validate.csv", test_data, fmt="%1.2f")
    
 
 """

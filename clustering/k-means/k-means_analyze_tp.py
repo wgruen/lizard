@@ -125,7 +125,7 @@ def main(argv):
     file_path = os.path.join(os.getcwd(), args.input_config_file)
     test_data = ''
     print("file:", file_path)
-    with open(file_path, 'rt') as f:
+    with open(file_path, 'r') as f:
         reader_d = csv.reader(f, delimiter=',')
         
         # get header from first row

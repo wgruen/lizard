@@ -47,9 +47,7 @@ def calculate(data):
     # split Y values
     Y = data[:, 1:]
     print("Y", linesep, Y)
-    
     print("len Y / X: ", len(Y) , len(X) )
-    print("len Y columns / X columns: ", len(Y[0]) , len(X[0]) )
 
     
     #duplicate X as many times as needed
@@ -62,8 +60,7 @@ def calculate(data):
     print("X falttened", linesep, X)
     print("Y flattened", linesep, Y)
     print("len Y / X: ", len(Y) , len(X) )
-    print("len Y columns / X columns: ", len(Y[0]) , len(X[0]) )
-    
+
 
     
     # show data over X 
@@ -129,16 +126,23 @@ def main(argv):
     test_data = ''
     print("file:", file_path)
     with open(file_path, 'r') as f:
-        reader = csv.reader(f, delimiter=',')
+        reader_d = csv.reader(f, delimiter=',')
+        
         # get header from first row
-        headers = next(reader)
+        headers = next(reader_d)
         # get all the rows as a list
-        data = list(reader)
+        data = list(reader_d)
         # transform data into numpy array
         test_data = np.array(data)
         
-    pprint.pprint(test_data)
-        
+
+    # take of the first column, it is just empty  
+    test_data = test_data[:, 1:]
+    
+    #convert numbers to integers
+    test_data = test_data.astype(np.float) 
+    #pprint.pprint(test_data)
+    
       
     calculate(test_data)
     
