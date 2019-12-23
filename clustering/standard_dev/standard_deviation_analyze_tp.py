@@ -90,6 +90,8 @@ def calculate(data, filename):
     print("Data Simple Mean:", linesep, data_mean)
     print("Data Standard Deviation:",  linesep, data_std)
     
+
+    
     # the cutoff defined as a multiple of the standard deviation
     cut_off = data_std * 3
     lower, upper = data_mean - cut_off, data_mean + cut_off
@@ -116,7 +118,8 @@ def calculate(data, filename):
     plt.xlabel("Mean " + str(data_mean) \
                + "\nStd Deviation : " + str(round(data_std, 4))\
                + "\n# Outliers: " + str(len(outliers))\
-               + "\nlower:" + str(lower))
+               + "\nlower: " + str(round(lower, 2))#\
+               + "\nupper: " + str(round(upper)))
     plt.scatter(X, Y_outliers, s = 50, c="blue")
     plt.savefig(pdf_out, format='pdf', bbox_inches='tight')
     plt.show()
