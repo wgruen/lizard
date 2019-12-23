@@ -15,6 +15,7 @@ import numpy as np
 import pprint
 import csv
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from numpy.random import seed
 from numpy.random import randn
 from numpy import mean
@@ -38,7 +39,12 @@ palette = np.array([["red"], # index 0: red
                     ])
 
 
-def calculate(data):
+def calculate(data, filename):
+    
+    
+    os.makedirs("output", exist_ok=True)
+    pdf_out = PdfPages('output/multipage.pdf')
+    
     print("data", linesep, data)
 
     #split first  row for X
@@ -71,8 +77,13 @@ def calculate(data):
 
     
     # show data over X 
+    #row column index
+    plt.subplot(1, 2, 1)
+    plt.title(filename + " - " + str(len(Y)) + " data points")
     plt.scatter(X, Y, s = 50, c="brown")
-    plt.show()
+    #plt.show()
+    #plt.savefig(pdf_out, format='pdf')
+
     
     
     data_mean, data_std = mean(Y), std(Y)#  identify outliers
@@ -99,21 +110,45 @@ def calculate(data):
     print("Y_outliers:", linesep, Y_outliers)
     
     #  show outliers over X 
-    plt.scatter(X, Y_outliers, s = 50, c="brown")
+    #plt.clf()
+    plt.subplot(1, 2, 2)
+    plt.title("Outliers")
+    plt.xlabel("Mean " + str(data_mean) \
+               + "\nStd Deviation : " + str(round(data_std, 4))\
+               + "\n# Outliers: " + str(len(outliers))\
+               + "\nlower:" + str(lower))
+    plt.scatter(X, Y_outliers, s = 50, c="blue")
+    plt.savefig(pdf_out, format='pdf', bbox_inches='tight')
     plt.show()
+    
     
     # positions of outliers in the flattened array
     Y_pos_outliers = np.argwhere(~np.isnan(Y_outliers.data))
     
     #translate into X and Y
     Y_data_rows, columns =  np.shape(Y_ORI)
+    outliers = ""
     for position in Y_pos_outliers:
-        row = position // columns 
-        column = position - row * columns
-        print("row, column, value\t", int(row), "\t", int(column), "\t", int(Y[position])  )
+        row = position[0] // columns
+        column = position[0] - row * columns
+        text = "row, column, value    " + str(row) + "wolf"
+        outliers += text
+        outliers += linesep
+        
+    '''     
+    print(outliers)
     
+    # add the outliers as numbers
+    plt.clf()
+    #plt.subplot(1, 1, 1)
+    fig = plt.figure()
+    fig.text(.1, .1, outliers)
     
-    
+    plt.savefig(pdf_out, format='pdf')
+    plt.show()
+    '''
+       
+    pdf_out.close()    
     
 
 
@@ -156,7 +191,7 @@ def main(argv):
     #pprint.pprint(test_data)
 
       
-    calculate(test_data)
+    calculate(test_data, "filename")
     
     
     
