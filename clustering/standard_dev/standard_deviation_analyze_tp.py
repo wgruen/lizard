@@ -113,20 +113,34 @@ def calculate(data, filename, result):
     
     
     
-    # positions of outliers in the flattened array
-    Y_pos_outliers = np.argwhere(~np.isnan(Y_outliers.data))
-    
     #translate into X and Y
     Y_data_rows, columns =  np.shape(Y_ORI)
+    
+    # positions of outliers in the flattened array
+    Y_outliers.reshape((Y_data_rows, columns))
+    pos_outliers = np.argwhere(~np.isnan(Y_outliers.data))
+    
+    
+    
     outliers = ""
-    for position in Y_pos_outliers:
-        row = position[0] // columns
-        column = position[0] - row * columns
-        text = "row, column, value    " + str(row) + "wolf"
+    for position in pos_outliers:
+        print("position: ", position)
+        pos = position[0] # number of columns
+        print("pos: ", pos)
+        print("columns: ", columns)
+        row = int(pos /  columns)
+        print("row: ", row)
+        column = pos - row * columns
+        print("column: ", column)
+        text = "pos, row, column, value    " + str(pos) + "\t"\
+            + str(row) + "\t"\
+            + str(column) + "\t"\
+            + str(Y[pos])
         outliers += text
         outliers += linesep
+        #break
         
-    
+    print("outliers:\n", outliers)
     result[filename]["outliers_values"] = outliers    
 
 
@@ -159,7 +173,7 @@ def open_file_and_calcualte(file_name, result):
     
 def create_output_pdf(results):
     
-    pdf_out = PdfPages("output/wolf" + ".pdf")
+    pdf_out = PdfPages("output/test" + ".pdf")
 
 
     for filename in results:
@@ -217,24 +231,6 @@ def main(argv):
     open_file_and_calcualte("../data/D1-150.csv", results)
     
     create_output_pdf(results)
-        
-        # get header from first row
-        headers = next(reader_d)
-        # get all the rows as a list
-        data = list(reader_d)
-        # transform data into numpy array
-        test_data = np.array(data)
-        
-
-    # take of the first column, it is just empty  
-    test_data = test_data[:, 1:]
-    
-    #convert numbers to integers
-    test_data = test_data.astype(np.float) 
-    #pprint.pprint(test_data)
-
-      
-    calculate(test_data, "filename")
     
     
     
