@@ -39,9 +39,7 @@ palette = np.array([["red"], # index 0: red
                     ])
 
 
-def calculate(data, filename):
-    
-    
+def calculate(data, filename, result):   
     os.makedirs("output", exist_ok=True)
     pdf_out = PdfPages('output/multipage.pdf')
     
@@ -66,6 +64,7 @@ def calculate(data, filename):
     #keep a copy
     X_ORI = X.copy()
     Y_ORI = Y.copy()
+    print("X flattened", linesep, X)
     
     # flatten the data
     X = X.flatten()
@@ -75,28 +74,23 @@ def calculate(data, filename):
     print("X flattened", linesep, X)
     print("Y flattened", linesep, Y)
 
-    
-    # show data over X 
-    #row column index
-    plt.subplot(1, 2, 1)
-    plt.title(filename + " - " + str(len(Y)) + " data points")
-    plt.scatter(X, Y, s = 50, c="brown")
-    #plt.show()
-    #plt.savefig(pdf_out, format='pdf')
-
-    
+      
     
     data_mean, data_std = mean(Y), std(Y)#  identify outliers
     print("Data Simple Mean:", linesep, data_mean)
     print("Data Standard Deviation:",  linesep, data_std)
     
-
+    result[filename] = {}
+    result[filename]["mean"] = data_mean
+    result[filename]["std_deviaton"] = data_std
+    result[filename]["X"] = X
+    result[filename]["Y"] = Y
+    result[filename]["title"] = filename + " - " + str(len(Y)) + " data points"
     
     # the cutoff defined as a multiple of the standard deviation
     cut_off = data_std * 3
     lower, upper = data_mean - cut_off, data_mean + cut_off
-    
-    #
+
     
     # identify outliers
     outliers = [x for x in Y if x < lower or x > upper]
@@ -110,19 +104,13 @@ def calculate(data, filename):
     Y_outliers[np.logical_and(Y_outliers > lower, Y_outliers < upper)] = np.nan
     
     print("Y_outliers:", linesep, Y_outliers)
-    
-    #  show outliers over X 
-    #plt.clf()
-    plt.subplot(1, 2, 2)
-    plt.title("Outliers")
-    plt.xlabel("Mean " + str(data_mean) \
-               + "\nStd Deviation : " + str(round(data_std, 4))\
+    result[filename]["outliers_Y"] = Y_outliers
+    result[filename]["outliers_title"] = "Mean " + str(data_mean)\
+                + "\nStd Deviation : " + str(round(data_std, 4))\
                + "\n# Outliers: " + str(len(outliers))\
-               + "\nlower: " + str(round(lower, 2))#\
-               + "\nupper: " + str(round(upper)))
-    plt.scatter(X, Y_outliers, s = 50, c="blue")
-    plt.savefig(pdf_out, format='pdf', bbox_inches='tight')
-    plt.show()
+               + "\nlower: " + str(round(lower, 2)) \
+               + "\nupper: " + str(round(upper))
+    
     
     
     # positions of outliers in the flattened array
@@ -138,6 +126,59 @@ def calculate(data, filename):
         outliers += text
         outliers += linesep
         
+    
+    result[filename]["outliers_values"] = outliers    
+
+
+
+def open_file_and_calcualte(file_name, result):
+     # open the data file
+    file_path = os.path.join(os.getcwd(), file_name)
+    test_data = ''
+    print("file:", file_path)
+    with open(file_path, 'r') as f:
+        reader_d = csv.reader(f, delimiter=',')
+        
+        # get header from first row
+        headers = next(reader_d)
+        # get all the rows as a list
+        data = list(reader_d)
+        # transform data into numpy array
+        test_data = np.array(data)
+        
+
+    # take of the first column, it is just empty  
+    test_data = test_data[:, 1:]
+    
+    #convert numbers to integers
+    test_data = test_data.astype(np.float) 
+    #pprint.pprint(test_data)
+
+    calculate(test_data, file_name, result)
+   
+    
+def create_output_pdf(results):
+    
+    pdf_out = PdfPages("output/wolf" + ".pdf")
+
+
+    for filename in results:
+        print("filename: ", filename)
+    
+        plt.subplot(1, 2, 1)
+        plt.title(filename + " - " + str(len(results[filename]["Y"])) + " data points")
+        plt.scatter(results[filename]["X"], results[filename]["Y"], s = 50, c="brown")
+    
+        plt.subplot(1, 2, 2)
+        plt.title("Outliers")
+        plt.xlabel(results[filename]["outliers_title"])
+        plt.scatter(results[filename]["X"], results[filename]["outliers_Y"], s = 50, c="blue")
+        #plt.figure()
+        #plot1 = plt.plot()
+        plt.savefig(pdf_out, format='pdf', bbox_inches='tight')
+        plt.plot()
+        #break
+        
     '''     
     print(outliers)
     
@@ -150,12 +191,9 @@ def calculate(data, filename):
     plt.savefig(pdf_out, format='pdf')
     plt.show()
     '''
-       
-    pdf_out.close()    
-    
-
-
-
+        
+        
+    pdf_out.close()
  
 '''
 The parameters are self explaining
@@ -170,13 +208,15 @@ def main(argv):
 
     args = parser.parse_args()
     #print(args)
-       
+   
+
+    results = {}    
     # open the data file
-    file_path = os.path.join(os.getcwd(), args.input_config_file)
-    test_data = ''
-    print("file:", file_path)
-    with open(file_path, 'r') as f:
-        reader_d = csv.reader(f, delimiter=',')
+   
+    open_file_and_calcualte("../data/D2-250.csv", results)
+    open_file_and_calcualte("../data/D1-150.csv", results)
+    
+    create_output_pdf(results)
         
         # get header from first row
         headers = next(reader_d)
