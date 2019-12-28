@@ -21,7 +21,13 @@ from numpy.random import randn
 from numpy import mean
 from numpy import std
 
+from reportlab.pdfgen import canvas
+from reportlab.platypus import *
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 
+styles = getSampleStyleSheet()
 
 
 from sklearn.cluster import KMeans
@@ -99,8 +105,9 @@ def calculate(data, filename, result):
     
     
     
-    # leave only the outliers in the array and display
+    # Prepare to display outliers
     Y_outliers = Y.copy()
+     # leave only the outliers in the array and display
     Y_outliers[np.logical_and(Y_outliers > lower, Y_outliers < upper)] = np.nan
     
     print("Y_outliers:", linesep, Y_outliers)
@@ -116,34 +123,58 @@ def calculate(data, filename, result):
     #translate into X and Y
     Y_data_rows, columns =  np.shape(Y_ORI)
     
-    # positions of outliers in the flattened array
+    # get the positions of outliers
+    # reshape the previously flattened array
     Y_outliers.reshape((Y_data_rows, columns))
     pos_outliers = np.argwhere(~np.isnan(Y_outliers.data))
     
+    print("Y_outliers reshaped: \n", len(pos_outliers))
+#    Y_outliers_data_rows, Y_outliers_columns =  np.shape(Y_outliers)
+ #   print("Y_outliers reshaped: \n", Y_outliers_data_rows, "  ", Y_outliers_columns)
     
     
-    outliers = ""
+    outliers = "\n"
+    outliers_data = np.zeros(0, dtype=int) #zeros([len(pos_outliers), 4], dtype=int)
     for position in pos_outliers:
-        print("position: ", position)
+        
+        #print("position: ", position)
         pos = position[0] # number of columns
-        print("pos: ", pos)
-        print("columns: ", columns)
+        #print("pos: ", pos)
+        #print("columns: ", columns)
         row = int(pos /  columns)
-        print("row: ", row)
+        #print("row: ", row)
         column = pos - row * columns
-        print("column: ", column)
+        column += 1
+        #print("column: ", column)
+        '''
         text = "pos, row, column, value    " + str(pos) + "\t"\
             + str(row) + "\t"\
             + str(column) + "\t"\
             + str(Y[pos])
         outliers += text
         outliers += linesep
+        '''
+        outliers_data = np.append(outliers_data, \
+            [pos, row, column, int(Y[pos])], axis=0)
+        print("outliers_data len: ", len (outliers_data))
+        print("outliers_data # columns: ", outliers_data)
         #break
-        
-    print("outliers:\n", outliers)
-    result[filename]["outliers_values"] = outliers    
 
+    #outliers_data = np.reshape(outliers_data, -1, 4)
+    print("outliers:\n", outliers_data)
+    result[filename]["outliers_values"] = Y_outliers.copy()
+    result[filename]["outliers_data"] = outliers_data.copy()
+    
 
+    # Prepare to display zero values
+    Y_zeros = Y.copy()
+     # leave only the outliers in the array and display
+    Y_zeros[Y_zeros != 0] = np.nan
+    
+    
+    
+    
+    
 
 def open_file_and_calcualte(file_name, result):
      # open the data file
@@ -174,6 +205,7 @@ def open_file_and_calcualte(file_name, result):
 def create_output_pdf(results):
     
     pdf_out = PdfPages("output/test" + ".pdf")
+    pdf_out_data = PdfPages("output/test_data" + ".pdf")
 
 
     for filename in results:
@@ -193,21 +225,48 @@ def create_output_pdf(results):
         plt.plot()
         #break
         
-    '''     
-    print(outliers)
+     
+        # print outliers to PDF
+        outliers_data = results[filename]["outliers_data"]
+        outliers_data = np.reshape(outliers_data, (-1, 4))
+        #plt.clf()
+        
+        #fig, ax = plt.subplots()
+        #fig.suptitle(filename + "outliers")
+        #plt.title("TITLE")
+        #plt.tight_layout()
     
-    # add the outliers as numbers
-    plt.clf()
-    #plt.subplot(1, 1, 1)
-    fig = plt.figure()
-    fig.text(.1, .1, outliers)
-    
-    plt.savefig(pdf_out, format='pdf')
-    plt.show()
-    '''
+        # hide axes
+        #fig.patch.set_visible(False)
+        #ax.axis('off')
+        #ax.axis('tight')
+        #ax.set_title(filename + " outliers")
+        df = pd.DataFrame(data=outliers_data, columns=("pos", "row", "column", "value"))
+        #ax.table(cellText=df.values, colLabels=df.columns, bbox=[0,0,1,1]) #loc='bottom')
+        #fig.tight_layout()
+        #plt.savefig(pdf_out_data, format='pdf', bbox_inches='tight')
+        #plt.show()
+        
+        header1 = Paragraph("<para align=center>pos</para>", styles['Normal'])
+        header2 = Paragraph("<para align=center>row</para>", styles['Normal'])
+        header3 = Paragraph("<para align=center>colum</para>", styles['Normal'])
+        header4 = Paragraph("<para align=center>value</para>", styles['Normal'])
+        row_array = [header1, header2, header3, header4]
+        tableHeading = [row_array]
+        th = Table(tableHeading)
+        
+        #t1 = Table(np.array(df).tolist(), colWidths=2);
+        t1 = Table(outliers_data, colWidths=2);
+        doc = SimpleDocTemplate("output/table.pdf", pagesize=letter)
+        element = []
+        element.append(th)
+        element.append(t1)
+        doc.build(element)
+        
         
         
     pdf_out.close()
+    pdf_out_data.close()
  
 '''
 The parameters are self explaining
