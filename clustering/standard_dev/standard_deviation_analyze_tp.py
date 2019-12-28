@@ -45,6 +45,38 @@ palette = np.array([["red"], # index 0: red
                     ])
 
 
+
+def get_table_for_special_positions(pos_specials, columns, Y_data):
+    specials = "\n"
+    specials_data = np.zeros(0, dtype=int) 
+    for position in pos_specials:
+        
+        #print("position: ", position)
+        pos = position[0] # number of columns
+        #print("pos: ", pos)
+        #print("columns: ", columns)
+        row = int(pos /  columns)
+        #print("row: ", row)
+        column = pos - row * columns
+        column += 1
+        #print("column: ", column)
+        '''
+        text = "pos, row, column, value    " + str(pos) + "\t"\
+            + str(row) + "\t"\
+            + str(column) + "\t"\
+            + str(Y[pos])
+        specials += text
+        specials += linesep
+        '''
+        specials_data = np.append(specials_data, \
+            [pos, row, column, int(Y_data[pos])], axis=0)
+        #print("outliers_data len: ", len (outliers_data))
+        #print("outliers_data # columns: ", outliers_data)
+        #break
+        
+    return specials_data
+
+
 def calculate(data, filename, result):   
     os.makedirs("output", exist_ok=True)
     pdf_out = PdfPages('output/multipage.pdf')
@@ -81,7 +113,7 @@ def calculate(data, filename, result):
     print("Y flattened", linesep, Y)
 
       
-    
+    ### Get the data mean and std deviation
     data_mean, data_std = mean(Y), std(Y)#  identify outliers
     print("Data Simple Mean:", linesep, data_mean)
     print("Data Standard Deviation:",  linesep, data_std)
@@ -98,14 +130,14 @@ def calculate(data, filename, result):
     lower, upper = data_mean - cut_off, data_mean + cut_off
 
     
-    # identify outliers
+    ### identify outliers
     outliers = [x for x in Y if x < lower or x > upper]
     print('Identified outliers: %d' % len(outliers))
     print("Outliers:", linesep, outliers)
     
     
     
-    # Prepare to display outliers
+    ### Prepare to display outliers
     Y_outliers = Y.copy()
      # leave only the outliers in the array and display
     Y_outliers[np.logical_and(Y_outliers > lower, Y_outliers < upper)] = np.nan
@@ -120,57 +152,37 @@ def calculate(data, filename, result):
     
     
     
-    #translate into X and Y
+    # get the number of rows and columsn of the original data
     Y_data_rows, columns =  np.shape(Y_ORI)
     
-    # get the positions of outliers
+    ### get the positions of outliers
     # reshape the previously flattened array
     Y_outliers.reshape((Y_data_rows, columns))
-    pos_outliers = np.argwhere(~np.isnan(Y_outliers.data))
+    pos_outliers = np.argwhere(~np.isnan(Y_outliers.data))    
+    print("len pos_outliers: \n", len(pos_outliers))   
     
-    print("Y_outliers reshaped: \n", len(pos_outliers))
-#    Y_outliers_data_rows, Y_outliers_columns =  np.shape(Y_outliers)
- #   print("Y_outliers reshaped: \n", Y_outliers_data_rows, "  ", Y_outliers_columns)
-    
-    
-    outliers = "\n"
-    outliers_data = np.zeros(0, dtype=int) #zeros([len(pos_outliers), 4], dtype=int)
-    for position in pos_outliers:
-        
-        #print("position: ", position)
-        pos = position[0] # number of columns
-        #print("pos: ", pos)
-        #print("columns: ", columns)
-        row = int(pos /  columns)
-        #print("row: ", row)
-        column = pos - row * columns
-        column += 1
-        #print("column: ", column)
-        '''
-        text = "pos, row, column, value    " + str(pos) + "\t"\
-            + str(row) + "\t"\
-            + str(column) + "\t"\
-            + str(Y[pos])
-        outliers += text
-        outliers += linesep
-        '''
-        outliers_data = np.append(outliers_data, \
-            [pos, row, column, int(Y[pos])], axis=0)
-        print("outliers_data len: ", len (outliers_data))
-        print("outliers_data # columns: ", outliers_data)
-        #break
+    outliers_data = get_table_for_special_positions(\
+                pos_outliers, columns, Y)
 
-    #outliers_data = np.reshape(outliers_data, -1, 4)
-    print("outliers:\n", outliers_data)
+        
+    #print("outliers:\n", outliers_data)
     result[filename]["outliers_values"] = Y_outliers.copy()
     result[filename]["outliers_data"] = outliers_data.copy()
     
 
-    # Prepare to display zero values
+    ### Get the position of  zero values
     Y_zeros = Y.copy()
      # leave only the outliers in the array and display
     Y_zeros[Y_zeros != 0] = np.nan
+    Y_zeros.reshape((Y_data_rows, columns))
+    pos_zeros = np.argwhere(~np.isnan(Y_zeros.data))    
+    print("len pos_zeros: \n", len(pos_zeros))   
     
+    zeros_data =get_table_for_special_positions(\
+                pos_zeros, columns, Y)
+        
+    #print("outliers:\n", outliers_data)
+    result[filename]["zeros_data"] = zeros_data.copy()
     
     
     
@@ -202,11 +214,25 @@ def open_file_and_calcualte(file_name, result):
     calculate(test_data, file_name, result)
    
     
-def create_output_pdf(results):
+def create_output_pdf_for_special_values(special_data, pdf_filename):
+        # print special data to PDF
+        special_data = special_data.reshape(-1, 4)
+#        outliers_data = np.reshape(outliers_data, [(-1, 4)])
+        print("special data: ", special_data)
+        df = pd.DataFrame(data=special_data, columns=("pos", "row", "column", "value"))
+        print("df:\n", df)
+        
+        lista = [df.columns[:,].values.astype(str).tolist()] + df.values.tolist()
+        t1 = Table(lista)
+        doc = SimpleDocTemplate(pdf_filename, pagesize=letter)
+        element = []
+        element.append(t1)
+        doc.build(element)
+        
+ 
     
+def create_output_pdf(results):    
     pdf_out = PdfPages("output/test" + ".pdf")
-    
-
 
     for filename in results:
         print("filename: ", filename)
@@ -227,23 +253,12 @@ def create_output_pdf(results):
         
      
         # print outliers to PDF
-        outliers_data = results[filename]["outliers_data"]
-        outliers_data = outliers_data.reshape(-1, 4)
-#        outliers_data = np.reshape(outliers_data, [(-1, 4)])
-        print("outliers_data wolff: ", outliers_data)
-        df = pd.DataFrame(data=outliers_data, columns=("pos", "row", "column", "value"))
-        print("df:\n", df)
+        create_output_pdf_for_special_values(results[filename]["outliers_data"],\
+                     "output/test_data.pdf")
         
-        
-        lista = [df.columns[:,].values.astype(str).tolist()] + df.values.tolist()
-        t1 = Table(lista)
-        doc = SimpleDocTemplate("output/test_data.pdf", pagesize=letter)
-        element = []
-        element.append(t1)
-        doc.build(element)
-        
-        
-        
+        create_output_pdf_for_special_values(results[filename]["zeros_data"],\
+                     "output/test_data_zeros.pdf")
+    
     pdf_out.close()
  
  
