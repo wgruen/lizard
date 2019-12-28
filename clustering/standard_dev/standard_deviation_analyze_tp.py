@@ -214,25 +214,30 @@ def open_file_and_calcualte(file_name, result):
     calculate(test_data, file_name, result)
    
     
-def create_output_pdf_for_special_values(special_data, pdf_filename):
+def create_output_pdf_for_special_values(special_data, element, filename):
         # print special data to PDF
         special_data = special_data.reshape(-1, 4)
-#        outliers_data = np.reshape(outliers_data, [(-1, 4)])
         print("special data: ", special_data)
+        
         df = pd.DataFrame(data=special_data, columns=("pos", "row", "column", "value"))
         print("df:\n", df)
         
         lista = [df.columns[:,].values.astype(str).tolist()] + df.values.tolist()
         t1 = Table(lista)
-        doc = SimpleDocTemplate(pdf_filename, pagesize=letter)
-        element = []
-        element.append(t1)
-        doc.build(element)
         
- 
+        header = Paragraph(filename, styles["Heading1"])
+        element.append(header)
+        element.append(t1)
+        return element
+   
     
 def create_output_pdf(results):    
     pdf_out = PdfPages("output/test" + ".pdf")
+    doc_outliers = SimpleDocTemplate("output/test_outliers.pdf", pagesize=letter)
+    doc_zeros    = SimpleDocTemplate("output/test_zeros.pdf", pagesize=letter)
+    
+    element_outliers = []
+    element_zeros = []
 
     for filename in results:
         print("filename: ", filename)
@@ -253,11 +258,16 @@ def create_output_pdf(results):
         
      
         # print outliers to PDF
-        create_output_pdf_for_special_values(results[filename]["outliers_data"],\
-                     "output/test_data.pdf")
+        element_outliers = create_output_pdf_for_special_values(results[filename]["outliers_data"],\
+                     element_outliers, filename)
         
-        create_output_pdf_for_special_values(results[filename]["zeros_data"],\
-                     "output/test_data_zeros.pdf")
+        element_zeros = create_output_pdf_for_special_values(results[filename]["zeros_data"],\
+                    element_zeros, filename)
+    
+    doc_outliers.build(element_outliers)
+    doc_zeros.build(element_zeros)
+    
+
     
     pdf_out.close()
  
