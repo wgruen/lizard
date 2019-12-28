@@ -205,7 +205,7 @@ def open_file_and_calcualte(file_name, result):
 def create_output_pdf(results):
     
     pdf_out = PdfPages("output/test" + ".pdf")
-    pdf_out_data = PdfPages("output/test_data" + ".pdf")
+    
 
 
     for filename in results:
@@ -228,45 +228,24 @@ def create_output_pdf(results):
      
         # print outliers to PDF
         outliers_data = results[filename]["outliers_data"]
-        outliers_data = np.reshape(outliers_data, (-1, 4))
-        #plt.clf()
-        
-        #fig, ax = plt.subplots()
-        #fig.suptitle(filename + "outliers")
-        #plt.title("TITLE")
-        #plt.tight_layout()
-    
-        # hide axes
-        #fig.patch.set_visible(False)
-        #ax.axis('off')
-        #ax.axis('tight')
-        #ax.set_title(filename + " outliers")
+        outliers_data = outliers_data.reshape(-1, 4)
+#        outliers_data = np.reshape(outliers_data, [(-1, 4)])
+        print("outliers_data wolff: ", outliers_data)
         df = pd.DataFrame(data=outliers_data, columns=("pos", "row", "column", "value"))
-        #ax.table(cellText=df.values, colLabels=df.columns, bbox=[0,0,1,1]) #loc='bottom')
-        #fig.tight_layout()
-        #plt.savefig(pdf_out_data, format='pdf', bbox_inches='tight')
-        #plt.show()
+        print("df:\n", df)
         
-        header1 = Paragraph("<para align=center>pos</para>", styles['Normal'])
-        header2 = Paragraph("<para align=center>row</para>", styles['Normal'])
-        header3 = Paragraph("<para align=center>colum</para>", styles['Normal'])
-        header4 = Paragraph("<para align=center>value</para>", styles['Normal'])
-        row_array = [header1, header2, header3, header4]
-        tableHeading = [row_array]
-        th = Table(tableHeading)
         
-        #t1 = Table(np.array(df).tolist(), colWidths=2);
-        t1 = Table(outliers_data, colWidths=2);
-        doc = SimpleDocTemplate("output/table.pdf", pagesize=letter)
+        lista = [df.columns[:,].values.astype(str).tolist()] + df.values.tolist()
+        t1 = Table(lista)
+        doc = SimpleDocTemplate("output/test_data.pdf", pagesize=letter)
         element = []
-        element.append(th)
         element.append(t1)
         doc.build(element)
         
         
         
     pdf_out.close()
-    pdf_out_data.close()
+ 
  
 '''
 The parameters are self explaining
