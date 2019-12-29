@@ -77,9 +77,9 @@ def get_table_for_special_positions(pos_specials, columns, Y_data):
     return specials_data
 
 
-def calculate(data, filename, result):   
+def calculate(data, filename, result, df_summary):   
     os.makedirs("output", exist_ok=True)
-    pdf_out = PdfPages('output/multipage.pdf')
+   # pdf_out = PdfPages('output/multipage.pdf')
     
     print("data", linesep, data)
 
@@ -148,7 +148,7 @@ def calculate(data, filename, result):
                 + "\nStd Deviation : " + str(round(data_std, 4))\
                + "\n# Outliers: " + str(len(outliers))\
                + "\nlower: " + str(round(lower, 2)) \
-               + "\nupper: " + str(round(upper))
+               + "\nupper: " + str(round(upper, 2))
     
     
     
@@ -184,11 +184,23 @@ def calculate(data, filename, result):
     #print("outliers:\n", outliers_data)
     result[filename]["zeros_data"] = zeros_data.copy()
     
+    summary_row1 = pd.Series([filename,\
+            len(pos_outliers),\
+            len(pos_zeros),\
+            round(data_mean, 2),\
+            round(data_std, 2),\
+            round(lower, 2),\
+            round(upper, 2)],\
+            index=df_summary.columns)
+    
+    df_summary = df_summary.append(summary_row1, ignore_index=True)
+    print("df_summary: \n", df_summary)
+    return df_summary
     
     
     
 
-def open_file_and_calcualte(file_name, result):
+def open_file_and_calcualte(file_name, result, df_summary):
      # open the data file
     file_path = os.path.join(os.getcwd(), file_name)
     test_data = ''
@@ -211,12 +223,19 @@ def open_file_and_calcualte(file_name, result):
     test_data = test_data.astype(np.float) 
     #pprint.pprint(test_data)
 
-    calculate(test_data, file_name, result)
+    df_summary = calculate(test_data, file_name, result, df_summary)
+    return df_summary
    
     
 def create_output_pdf_for_special_values(special_data, element, filename):
         # print special data to PDF
-        special_data = special_data.reshape(-1, 4)
+        
+        header = Paragraph(filename, styles["Heading1"])
+        element.append(header)
+        txt = Paragraph("Number of findings: " + str(len(special_data)), styles["Normal"])
+        element.append(txt)
+        
+        special_data = special_data.reshape(-1, 4) 
         print("special data: ", special_data)
         
         df = pd.DataFrame(data=special_data, columns=("pos", "row", "column", "value"))
@@ -225,19 +244,62 @@ def create_output_pdf_for_special_values(special_data, element, filename):
         lista = [df.columns[:,].values.astype(str).tolist()] + df.values.tolist()
         t1 = Table(lista)
         
-        header = Paragraph(filename, styles["Heading1"])
-        element.append(header)
         element.append(t1)
         return element
-   
     
-def create_output_pdf(results):    
-    pdf_out = PdfPages("output/test" + ".pdf")
-    doc_outliers = SimpleDocTemplate("output/test_outliers.pdf", pagesize=letter)
-    doc_zeros    = SimpleDocTemplate("output/test_zeros.pdf", pagesize=letter)
+    
+    
+def create_output_pdf_summary(df, filebase):
+    doc_summary  = SimpleDocTemplate("output/" + filebase + "_summary.pdf", pagesize=letter)
+    
+    element = []
+    header = Paragraph("\nSummary of Analysis Run", styles["Heading1"])
+    element.append(header)
+    
+    
+    # sort by standard deviation  
+    header = Paragraph("\nSorted by Standard Derivation", styles["Heading2"])
+    element.append(header)
+    
+    df = df.sort_values(by=["std_dev"])
+    lista = [df.columns[:,].values.astype(str).tolist()] + df.values.tolist()
+    t1 = Table(lista)        
+    element.append(t1)
+    
+    # sort by number of outliers  
+    header = Paragraph("\nSorted by Number of Outliers", styles["Heading2"])
+    element.append(header)
+    
+    df = df.sort_values(by=["# outliers"])
+    lista = [df.columns[:,].values.astype(str).tolist()] + df.values.tolist()
+    t1 = Table(lista)        
+    element.append(t1)
+    
+    # sort by number of zeros  
+    header = Paragraph("\nSorted by Number of Zeros", styles["Heading2"])
+    element.append(header)
+    
+    df = df.sort_values(by=["# zeros"])
+    lista = [df.columns[:,].values.astype(str).tolist()] + df.values.tolist()
+    t1 = Table(lista)        
+    element.append(t1)
+    
+    
+    doc_summary.build(element)
+    
+    
+    
+
+    
+    
+def create_output_pdf(results, df_summary, filebase):    
+    pdf_plots    = PdfPages("output/" +  filebase + "_plots.pdf")
+    doc_outliers = SimpleDocTemplate("output/" + filebase + "_outliers.pdf", pagesize=letter)
+    doc_zeros    = SimpleDocTemplate("output/" + filebase + "_zeros.pdf", pagesize=letter)
     
     element_outliers = []
     element_zeros = []
+  
 
     for filename in results:
         print("filename: ", filename)
@@ -252,7 +314,7 @@ def create_output_pdf(results):
         plt.scatter(results[filename]["X"], results[filename]["outliers_Y"], s = 50, c="blue")
         #plt.figure()
         #plot1 = plt.plot()
-        plt.savefig(pdf_out, format='pdf', bbox_inches='tight')
+        plt.savefig(pdf_plots, format='pdf', bbox_inches='tight')
         plt.plot()
         #break
         
@@ -264,12 +326,12 @@ def create_output_pdf(results):
         element_zeros = create_output_pdf_for_special_values(results[filename]["zeros_data"],\
                     element_zeros, filename)
     
+    ## Doen with collecting data, create the documents
     doc_outliers.build(element_outliers)
     doc_zeros.build(element_zeros)
     
 
-    
-    pdf_out.close()
+    pdf_plots.close()
  
  
 '''
@@ -285,15 +347,28 @@ def main(argv):
 
     args = parser.parse_args()
     #print(args)
-   
+  
+    df_summary = pd.DataFrame(columns=["filename",\
+        "# outliers",\
+        "# zeros",\
+        "mean",\
+        "std_dev",\
+        "lower_cutoff",\
+        "upper_cutoff"])
+
 
     results = {}    
     # open the data file
    
-    open_file_and_calcualte("../data/D2-250.csv", results)
-    open_file_and_calcualte("../data/D1-150.csv", results)
+    df_summary = open_file_and_calcualte("../data/D2-250.csv", results, df_summary)
+    df_summary = open_file_and_calcualte("../data/D1-150.csv", results, df_summary)
     
-    create_output_pdf(results)
+    from datetime import datetime
+    now = datetime.now() # current date and time
+
+    date_time = now.strftime("run_%m-%d-%Y--%H-%M")
+    create_output_pdf(results, df_summary, date_time)
+    create_output_pdf_summary(df_summary, date_time)
     
     
     
