@@ -14,6 +14,8 @@ import pandas as pd
 import numpy as np
 import pprint
 import csv
+import yaml
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy.random import seed
@@ -77,7 +79,7 @@ def get_table_for_special_positions(pos_specials, columns, Y_data):
     return specials_data
 
 
-def calculate(data, filename, result, df_summary):   
+def calculate(data, filename, result, df_summary, cutoff_offset_percent):   
     os.makedirs("output", exist_ok=True)
    # pdf_out = PdfPages('output/multipage.pdf')
     
@@ -126,9 +128,9 @@ def calculate(data, filename, result, df_summary):
     result[filename]["title"] = filename + " - " + str(len(Y)) + " data points"
     
     # the cutoff defined as a multiple of the standard deviation
-    cut_off = data_std * 3
+    #cut_off = data_std * 3
+    cut_off = data_mean * cutoff_offset_percent / 100
     lower, upper = data_mean - cut_off, data_mean + cut_off
-
     
     ### identify outliers
     outliers = [x for x in Y if x < lower or x > upper]
@@ -178,7 +180,7 @@ def calculate(data, filename, result, df_summary):
     pos_zeros = np.argwhere(~np.isnan(Y_zeros.data))    
     print("len pos_zeros: \n", len(pos_zeros))   
     
-    zeros_data =get_table_for_special_positions(\
+    zeros_data = get_table_for_special_positions(\
                 pos_zeros, columns, Y)
         
     #print("outliers:\n", outliers_data)
@@ -197,10 +199,8 @@ def calculate(data, filename, result, df_summary):
     print("df_summary: \n", df_summary)
     return df_summary
     
-    
-    
 
-def open_file_and_calcualte(file_name, result, df_summary):
+def open_file_and_calcualte(file_name, result, df_summary, cutoff_offset_percent):
      # open the data file
     file_path = os.path.join(os.getcwd(), file_name)
     test_data = ''
@@ -223,7 +223,7 @@ def open_file_and_calcualte(file_name, result, df_summary):
     test_data = test_data.astype(np.float) 
     #pprint.pprint(test_data)
 
-    df_summary = calculate(test_data, file_name, result, df_summary)
+    df_summary = calculate(test_data, file_name, result, df_summary, cutoff_offset_percent)
     return df_summary
    
     
@@ -289,9 +289,6 @@ def create_output_pdf_summary(df, filebase):
     
     
     
-
-    
-    
 def create_output_pdf(results, df_summary, filebase):    
     pdf_plots    = PdfPages("output/" +  filebase + "_plots.pdf")
     doc_outliers = SimpleDocTemplate("output/" + filebase + "_outliers.pdf", pagesize=letter)
@@ -346,8 +343,19 @@ def main(argv):
                         help='The yaml file containing configuration')
 
     args = parser.parse_args()
-    #print(args)
-  
+    print("args: ", args)
+    
+    ### Get the configuration
+    configuration = None
+    input_file_full_path = os.path.join(os.getcwd(), args.input_config_file)
+    with open(input_file_full_path, 'r') as stream:
+        configuration = yaml.safe_load(stream)
+        
+    print(yaml.safe_dump(configuration, default_flow_style=False, default_style=None))
+    
+    read_file_or_dir = configuration["read_file_or_dir"]
+    read_full_path = os.path.join(os.getcwd(), read_file_or_dir)
+    
     df_summary = pd.DataFrame(columns=["filename",\
         "# outliers",\
         "# zeros",\
@@ -359,9 +367,21 @@ def main(argv):
 
     results = {}    
     # open the data file
-   
-    df_summary = open_file_and_calcualte("../data/D2-250.csv", results, df_summary)
-    df_summary = open_file_and_calcualte("../data/D1-150.csv", results, df_summary)
+    
+    cutoff_offset_percent = configuration["cutoff_offset_percent"]
+    if(os.path.isdir(read_full_path)):
+        for entry in os.scandir(read_full_path):
+            if entry.is_file():
+                print(entry.name)
+                full_filename = os.path.join(read_file_or_dir, entry.name)
+                df_summary = open_file_and_calcualte(full_filename,\
+                        results, df_summary, cutoff_offset_percent)
+                
+                
+    else:
+        df_summary = open_file_and_calcualte(read_full_path,\
+                    results, df_summary, cutoff_offset_percent)
+        
     
     from datetime import datetime
     now = datetime.now() # current date and time
