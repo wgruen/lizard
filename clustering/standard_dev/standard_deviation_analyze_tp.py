@@ -232,11 +232,16 @@ def create_output_pdf_for_special_values(special_data, element, filename):
         
         header = Paragraph(filename, styles["Heading1"])
         element.append(header)
-        txt = Paragraph("Number of findings: " + str(len(special_data)), styles["Normal"])
-        element.append(txt)
         
         special_data = special_data.reshape(-1, 4) 
         print("special data: ", special_data)
+        
+        # get number of rows
+        rows, coluums = special_data.shape
+        txt = Paragraph("Number of findings: " + str(rows), styles["Normal"])
+        element.append(txt)
+        
+        
         
         df = pd.DataFrame(data=special_data, columns=("pos", "row", "column", "value"))
         print("df:\n", df)
