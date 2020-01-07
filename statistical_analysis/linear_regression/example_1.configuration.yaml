@@ -1,0 +1,14 @@
+Description:
+    The test is about analysing a file or files in a direcotry, 
+    then creating pdf files
+    read_file_or_dir "../data/D1-150.csv"
+    read_file_or_dir "../data/"
+    
+    The percentage offset for interquartile should be 25,
+    since it is supposed to be 25 percent and 75 percent
+    
+
+
+read_file_or_dir: "../data/"
+
+cutoff_offset_percent: 25
