@@ -6,6 +6,6 @@ Description:
     
 
 
-read_file_or_dir: "../data/"
+read_file_or_dir: "../data/D1-150.csv"
 
 cutoff_offset_percent: 25

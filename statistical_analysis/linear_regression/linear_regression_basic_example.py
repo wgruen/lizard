@@ -6,51 +6,73 @@ import pandas as pd
 import statsmodels.api as sm
 import numpy as np
 import matplotlib.pyplot as plt
-
+import time
 
 
 # data, this creates random data in three columns
-np.random.seed(123)
-df = pd.DataFrame(np.random.randint(0,100,size=(100, 3)), columns=list('ABC'))
+# https://machinelearningmastery.com/implement-simple-linear-regression-scratch-python/
+
+#https://www.statsmodels.org/dev/examples/notebooks/generated/ols.html
 
 
+np.random.seed(int(time.time()))
+df1__0_25 = pd.DataFrame(np.random.randint(0, 25, size=(25, 1)), columns=list('A'))
+df2_26_50 = pd.DataFrame(np.random.randint(26, 50,size=(25, 1)), columns=list('A'))
+df3_51_75 = pd.DataFrame(np.random.randint(51, 75,size=(25, 1)), columns=list('A'))
+df4_76_100 = pd.DataFrame(np.random.randint(76, 100,size=(25, 1)), columns=list('A'))
+#print("df2:\n", df2)
+
+
+
+# build a dataset for the indendent variable
+df = pd.DataFrame()
+df = df.append(df1__0_25, ignore_index=True)
+df = df.append(df2_26_50, ignore_index=True)
+df = df.append(df3_51_75, ignore_index=True)
+df = df.append(df4_76_100, ignore_index=True)
+
+X = df
 # assign dependent and independent / explanatory variables
-variables = list(df.columns)
-print("variables:\n", variables)
-print("df:\n", df)
+#variables = list(df.columns)
+#print("variables:\n", variables)
+#print("df:\n", df)
 
-# y : column A will be the dependent variable
-y = 'A'
+# build a dataset for the dependent variable
+df_y = pd.DataFrame()
+df_y = df_y.append(df2_26_50, ignore_index=True)
+df_y = df_y.append(df2_26_50, ignore_index=True)
+df_y = df_y.append(df2_26_50, ignore_index=True)
+df_y = df_y.append(df2_26_50, ignore_index=True)
 
-# x : the other columns will be number of observations
-x = [var for var in variables if var not in y ]
-print("x\n", x)
+Y = df_y
+print("Y:\n",Y)
 
-# Ordinary least squares regression
-print(df[y])
-print(df[x])
-model_Simple = sm.OLS(df[y], df[x]).fit()
+
+
+# column B and C will be the independent variable
+#x = columns=list('B')
+
+# adding a constant to the two variables
+X = sm.add_constant(df)
+print("X:\n", X)
+
 
 
 # Add a constant term like so:
-model = sm.OLS(df[y], sm.add_constant(df[x])).fit()
-print("model.params:\n", model.params)
-
+model = sm.OLS(Y, X).fit()
+print("model.params:\n", model.params)   
 print(model.summary())
 
-y = ['A', 'A']
 
-#duplicate X as many times as needed
-#y = np.repeat(df[y], len(x[0]))
-print("len df[x]: ", len(df[x]))
-print("len df[y]: ", len(df[y]))
+# the scatter plot
+# dependent variable
+plt.scatter(df.index, df, s = 10, facecolors='none', edgecolors="brown")
+
+# independent variable
+plt.scatter(df_y.index, df_y, s = 10, facecolors='none', edgecolors="green")
 
 
-#plt.subplot(1, 2, 1)
-#plt.title(filename + " - " + str(len(results[filename]["Y"])) + " data poin
-plt.scatter(df[y], df[x], s = 50, c="brown")
+# plot the fitted values from the model
+plt.plot(df.index, model.fittedvalues, 'r--.', c="blue", label="OLS")
 plt.plot()
   
-
-
-
