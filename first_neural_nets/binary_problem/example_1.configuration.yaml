@@ -16,7 +16,7 @@ training_data:
     number_of_hidden_neurons:   4
     number_of_hidden_layers:    1   
     number_of_outputs_neurons:  1
-    number_of_training_iterations: 100000
+    number_of_training_iterations: 10000
     
 
 machine_dump_file_name: "example_1.trained.machine.bin"

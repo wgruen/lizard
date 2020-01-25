@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              #!/usr/bin/env python3
 
 import sys
 import argparse
@@ -11,6 +11,7 @@ from os import linesep
 import pprint, pickle
 import json
 import yaml
+import decimal
 
 
 
@@ -45,8 +46,10 @@ Train a machine and store the machine as a binary blob
 '''
 def learn(configuration):
     # Load the training data
+    file_name = configuration["training_data"]["training_data_file_name"]
+    print("Input file name: "+ file_name)
     
-    training_set_inputs = np.loadtxt(configuration["training_data"]["training_data_file_name"])
+    training_set_inputs = np.loadtxt(file_name)
     print("Raw training_set_inputs: ****************" + linesep + str(training_set_inputs))
     # extract input data and expected output
     training_set_outputs = training_set_inputs[:, -1] # for last column
@@ -107,7 +110,7 @@ Use a previously trained machine with a new data set
 def calculate(configuration):
     print("In calculate ****************", linesep)
   
-    # Read in the neural machine, wich was used to with the training data
+    # Read in theneural machine, wich was used to with the training data
     # No need to re-create the machine :-)
     dump_nr_file_name = configuration["machine_dump_file_name"]
     with open(dump_nr_file_name,"rb") as pickle_in:
@@ -121,7 +124,10 @@ def calculate(configuration):
  
     
     test_data = np.loadtxt(configuration["validation_data"])
-    test_data = array(test_data)
+
+    test_data = np.array(test_data, dtype=np.dtype(decimal.Decimal))
+     
+     
     print("test data: ****************" + linesep + str(test_data))
    
     print("Do calculaton with the trained network ****************", linesep)
