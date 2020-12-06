@@ -21,7 +21,9 @@ from keras.optimizers import SGD
 
 # load train and test dataset
 def load_dataset():
-    # load dataset
+    # load dat X=%s, y=%s' % (trainX.shape, trainY.shape))
+    #    print('Test: X=%s, y=%s' % (testX.shape, testY.shape))
+    # plot first aset
     (trainX, trainY), (testX, testY) = cifar10.load_data()
     
     # convert into form that can be used to ML algorithm
@@ -36,9 +38,7 @@ def load_dataset():
 
 def print_dataset(trainX, trainY, testX, testY):
     # summarize loaded dataset
-    print('Train: X=%s, y=%s' % (trainX.shape, trainY.shape))
-    print('Test: X=%s, y=%s' % (testX.shape, testY.shape))
-    # plot first few images
+    print('Train:few images')
     for i in range(1):
         # define subplot
         pyplot.subplot(330 + 1 + i)
@@ -72,49 +72,128 @@ def prepare_data(data):
     
 
 # Here we build the layers of the CNN (Convolutional Neural Networks) model
+# CCN was designed to work with two dimensional image data.
 def define_model():
 	model = Sequential()
     
-    # https://machinelearningmastery.com/object-recognition-convolutional-neural-networks-keras-deep-learning-library/
    
     # input shape
-    ## how many elements and array or tensor has in each dimension
-    ## three dimensions
-    ## 32 elements in the first dimension
-    ## 32 elements in the second dimension
-    ## 3  elements in the third dimension
-    ### The pictures (data) has 32 times 32 pixels
-    ### Each pixel has a value for its Red, Green and Blue 
+    # The pictures (data) is measuring 32 by 32 pixels squares
+    # Each pixel has a value for its Red, Green and Blue 
+    ## So there are basically three dimensions.
+    ## 32 elements in the first and second (x,y) dimension
+    ## 3  elements (data points) in the third dimension (z)  for R,G,B
+    # https://machinelearningmastery.com/object-recognition-convolutional-neural-networks-keras-deep-learning-library/
+   
     
-    # Conv2D
+    # For the activation funtion we use the rectified linear 
+    # activation function or ReLU,
+    # since it overcomes the vanishing gradient problem which
+    # appears in networks with many layers
+    # https://machinelearningmastery.com/rectified-linear-activation-function-for-deep-learning-neural-networks/
+    # https://machinelearningmastery.com/how-to-develop-a-cnn-from-scratch-for-cifar-10-photo-classification/
+    # https://machinelearningmastery.com/how-to-fix-vanishing-gradients-using-the-rectified-linear-activation-function/
+    
+    
+    # For the initialization of the parameters of a tensors, 
+    # the kernel initializer he_uniform is used which draws samples
+    # from a uniform distribution
+    # https://www.tensorflow.org/api_docs/python/tf/keras/initializers/HeUniform
+
+
+    ### Conv2D is a conventual layer
+    # The purpose of a convential layer is to train the parameters of the filter.
+    # Please note that the filter is The Filter which is supposed to find specific features.
+    # So bascailly, the features of the pictures are unknown and 
+    # the Conv2D layer is used to train the filter to find the features.
+
+    # A conventual layer learns (outputs) more than one filter (or feature).
+    # This means that each filter in the output represents a learned feature map.
+    #
+    # Color images have multiple channels, one channel for each of the colors R,G,B
+    # This means that each filter has depth. Smaller images use a 3x3 filter.
+    # This means we actually train a 3x3 filter, while moving the 3x3 filter over the image.
+    #
+    # The filter will move over the image (x,y) defined by strides and 
+    # the value for strides defaults (1,1)
+    # This means that the filter will move one pixel at a time.
+    #
+    # Padding can be used to chose whether the convulation output be the 
+    # same size or smaller than the orgiginal image dimensions.
+    # When 'same' is choosen, it means that 
+    
+    # https://missinglink.ai/guides/keras/keras-conv2d-working-cnn-2d-convolutions-keras/
     # https://www.tensorflow.org/api_docs/python/tf/keras/layers/Conv2D
-    # Total number of inputs is 32x32 = 1024 and three values (RGB) = 3072
-    # activation relu = y = max(0, x)
-    # VG based model
-    # https://medium.com/datadriveninvestor/cnn-architecture-series-vgg-16-with-implementation-part-i-bca79e7db415
+    # https://machinelearningmastery.com/convolutional-layers-for-deep-learning-neural-networks/
+    
+    ### MaxPooling2D
+    # This function reduces the data array
+    # A pool size of (2, 2), means that 4 datapoints (2x2) will be reduced to
+    # one data point. The new value will be the max value of a 2x2 area.
+    # Since it is a two dimensional pooling function, the 3rd dimension will be not be touched.
+    
+    ### Flatten
+    # This will flatten the data in the array into a one dimesional array
+    # https://keras.io/api/layers/reshaping_layers/flatten/
+    
+    ### Dense
+    
+    
+    # https://keras.io/api/layers/core_layers/dense/
+    
+    
+    #######################################################################
+    ### The model is created below
+    #######################################################################
     
 	model.add(Conv2D(filters=32, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=(32, 32, 3)))
+    # The output are 32 filters/features, each identifying a feature. 
+    # The shape for each filter will be the shape of the input (32x32), since padding is set to 'same'
+    # These feature matrixes are input into the next layer
+    
 	model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+    # The output are 32 filters/features , each representing a feature. 
+    # The shape for each filter will be the shape of the input (32x32), since padding is set to 'same'
 
 	model.add(MaxPooling2D(pool_size=(2, 2)))
-    
+    # The output wil be a reduced  matrix.
+    # There will still be 32 fiters, however the matrix for each filter was reduced to 16x16
+
     
 	model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+    # The output will be 64 filters/features.
+    # Basically now we are looking for smaller features within the picture
+    
+    
 	model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+    # The output wil be 64 filters/Refined Features
+    
+    
 	model.add(MaxPooling2D((2, 2)))
+    # The output will be a reduced matrix
+    # There will still be 64 filters, but the matrix was reduced to 8x8
     
 	model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-	model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-	model.add(MaxPooling2D((2, 2)))
+    # The output will be 128 filters/features.
+    # Basically now we are looking for smaller features within the picture
     
-    # Flatten the input
+	model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+    # The output will be 128 Refined Features
+    
+	model.add(MaxPooling2D((2, 2)))
+    # The output wil be a reduced  matrix.
+    # There will still be 128 filters, however the matrix for each filter was reduced to 8x8
+
+    # Flatten the array
 	model.add(Flatten())
+    # The output is a one dimensional array with 128x8x8 - 2048 values
     
-    # First hidden network layer with 128 Neurons
 	model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
-    
-    # The output layer with 10 Neurons - output layer using softmax
+    # the output will be 128 neurons, in a one dimensional matrix
+    # The input were 128 features (2048 lines data points)  which were deteced in the picture
+
 	model.add(Dense(10, activation='softmax'))
+    # the output will be 10 neurons, using softmax as activation
     
     
 	# compile model
@@ -140,8 +219,13 @@ def main(argv):
     # define and use a model
     model = define_model()
     print("model weights:\n", model.get_weights())
-    print("model summary:\n", model.summary())
+
+    print("model summary before training/fitting:\n", model.summary())
     #print("model:\n", model.get_weights())
+    
+        
+    print("print model config:")
+    print(model.get_config())
     
     # fit the model
     model.fit(trainX, trainY,\
@@ -149,9 +233,10 @@ def main(argv):
         #100,\
         batch_size=64,\
         validation_data=(testX, testY),\
-        verbose=1)
+        verbose=0)
     
-    print(model.get_config())
+    print("model summary after training/fitting:\n", model.summary())
+    print("model:\n", model.get_weights())    
     
     
     ## EVALUATE the previously trained model
