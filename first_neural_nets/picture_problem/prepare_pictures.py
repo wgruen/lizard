@@ -195,6 +195,7 @@ class myCIFAR10():
         
         #######################################################################
         ### The model is created below
+        ### This model has 3 VGG layers (Visual Geometry Groups)
         #######################################################################
         
         self.model.add(Conv2D(filters=32, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=(32, 32, 3)))
