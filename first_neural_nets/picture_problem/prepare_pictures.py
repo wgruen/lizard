@@ -2,12 +2,15 @@
 
 
 # https://machinelearningmastery.com/how-to-develop-a-cnn-from-scratch-for-cifar-10-photo-classification/
+# https://towardsdatascience.com/a-beginners-guide-to-convolutional-neural-networks-cnns-14649dbddce8
 
 import sys
 from matplotlib import pyplot
 import argparse
 import yaml
 import json
+import io
+from contextlib import redirect_stdout
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -63,7 +66,7 @@ class myCIFAR10():
     def print_dataset(self):
         # summarize loaded dataset
         print('Train:few images')
-        for i in range(3):
+        for i in range(1):
             # define subplot
             pyplot.subplot(330 + 1 + i)
             
@@ -108,7 +111,7 @@ class myCIFAR10():
     CCN was designed to work with two dimensional image data.
     '''
     def define_model(self):
-        model = Sequential()
+        self.model = Sequential()
         
        
         # input shape
@@ -165,6 +168,7 @@ class myCIFAR10():
         # A pool size of (2, 2), means that 4 datapoints (2x2) will be reduced to
         # one data point. The new value will be the max value of a 2x2 area.
         # Since it is a two dimensional pooling function, the 3rd dimension will be not be touched.
+        # https://machinelearningmastery.com/pooling-layers-for-convolutional-neural-networks/
         
         ### Flatten
         # This will flatten the data in the array into a one dimesional array
@@ -186,69 +190,161 @@ class myCIFAR10():
         # then the error value can move faster to the minimum
         # https://mlfromscratch.com/optimizers-explained/#/
         
+        ### other standard optiizers
+        # https://www.tensorflow.org/api_docs/python/tf/keras/optimizers
+        
         #######################################################################
         ### The model is created below
         #######################################################################
         
-        model.add(Conv2D(filters=32, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=(32, 32, 3)))
-        # The output are 32 filters/features, each identifying a feature. 
-        # The shape for each filter will be the shape of the input (32x32), since padding is set to 'same'
-        # These feature matrixes are input into the next layer
+        self.model.add(Conv2D(filters=32, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=(32, 32, 3)))
+        # We are training 32 convolution filters. Eeach filter shall identify 
+        # a feature in the picture.
+        # The output are 32 features. 
+        # The shape for each feature will be in the original size of the picture.
+        #
+        # How many neurons are in that layer?
+        # There are 32 filters
+        # Padding is set to valid (same)
+        # The inputs depth is 3 , one for each  RGB
+        # 32x3 = 96 Neurons - the number of filters times input depth
+        #
+        # How many parameters to trained?
+        # There are 96 neurons
+        # Each filter is 3x3
+        # One bias parameter is Added for each filter (32) 
+        # 96x3x3(864)  + 32(bias) = 896 prameters 
         
-        model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-        # The output are 32 filters/features , each representing a feature. 
-        # The shape for each filter will be the shape of the input (32x32), since padding is set to 'same'
-    
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        # The output wil be a reduced  matrix.
-        # There will still be 32 fiters, however the matrix for each filter was reduced to 16x16
+        self.model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        # We are training 32 convolution filters.
+        # The output are 32 (refined?) features. 
+        #
+        # How many neurons are in that layer?
+        # The previous filter has 96 neurons
+        # This layer has 96 neurons as well
+        #
+        # How many parameters to trained?
+        # One bias parameter is Added for each filter (32) 
+        # 96x96 + 32(bias) = 9248 parameters
+
+   
+        self.model.add(MaxPooling2D(pool_size=(2, 2)))
+        # The input will be 32 filters
+        # The input size is 96 neurons
+        # The input is a feature of size 32x32
+        # The output will be 32 filters
+        # The output are 96 neurons
+        # The output is a feature of size 16x16
+        # The output is a reduced feature map
+              
     
         
-        model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        self.model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
         # The output will be 64 filters/features.
         # Basically now we are looking for smaller features within the picture
+        #
+        # How many neurons are in that layer?
+        # There are 64 filters
+        # Input depth is 3 (RGB)
+        # 64x3 = 192 neurons
+        #
+        # How many parameters to trained?
+        # This layer is 192 neurons
+        # The previous layer has 96 neurons
+        # One bias parameter is Added for each filter (64) 
+        # 192x96 + 64(bias) = 18496 parameters
         
         
-        model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        self.model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
         # The output wil be 64 filters/Refined Features
+        #
+        # How many neurons are in that layer?
+        # This layer has 192 neurons
+        # The previous layer has 192 neurons
+        #
+        # How many parameters to trained?
+        # 192x192 + 64(bias) = 36928 parameters
+        
+
+        self.model.add(MaxPooling2D((2, 2)))
+        # The input will be 64 filters
+        # The input size is 192 neurons
+        # The input is a feature of size 16x16
+        # The output will be 64 filters
+        # The output are 192 neurons
+        # The output is a feature of size 8x8
+        # The output is a reduced feature map
         
         
-        model.add(MaxPooling2D((2, 2)))
-        # The output will be a reduced matrix
-        # There will still be 64 filters, but the matrix was reduced to 8x8
-        
-        model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        self.model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
         # The output will be 128 filters/features.
         # Basically now we are looking for smaller features within the picture
+        #
+        # How many neurons are in that layer?
+        # There are 128 filters
+        # Input depth is 3 (RGB)
+        # 128x3 = 384 neurons
+        #
+        # How many parameters to trained?
+        # This layer is 384 neurons
+        # The previous layer has 192 neurons
+        # One bias parameter is Added for each filter (128) 
+        # 384x192 + 128(bias) = 73856 parameters
         
-        model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
-        # The output will be 128 Refined Features
         
-        model.add(MaxPooling2D((2, 2)))
-        # The output wil be a reduced  matrix.
-        # There will still be 128 filters, however the matrix for each filter was reduced to 8x8
+        self.model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        # The output wil be 128 filters/Refined Features
+        #
+        # How many neurons are in that layer?
+        # This layer has 384 neurons
+        # The previous layer has 384 neurons
+        #
+        # How many parameters to trained?
+        # 384x384 + 128(bias) = 147584 parameters
+        
+        ### Now we are done with feature extraction
+        # We will flatten before we look at all the features
+        # and try to identify 10 different 
+        # kind of pictures
+        
+        self.model.add(MaxPooling2D((2, 2)))
+        # The input will be 128 filters
+        # The input size is 384 neurons
+        # The input is a feature of size 8x8
+        # The output will be 128 filters
+        # The output are 384 neurons
+        # The output is a feature of size 4x4
+        # The output is a reduced feature map
     
-        # Flatten the array
-        model.add(Flatten())
-        # The output is a one dimensional array with 128x8x8 - 2048 values
+        # Flatten the array, go get ready for the Dense layers
+        self.model.add(Flatten())
+        # The input are 128 filters
+        # The input has a depth of 3 (RGB)
+        # The input size for each filter is 4x4
+        # The output is a flattened one dimensional array
+        # The output has 128x4x4 - 2048 neurons
         
-        model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
-        # the output will be 128 neurons, in a one dimensional matrix
-        # The input were 128 features (2048 lines data points)  which were deteced in the picture
+        self.model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
+        # The input are 2048 neurons
+        # The output are 128 neurons
+        #
+        # How many parameters are trained?
+        # 2048x128 + 128(bias) = 262272 parameters
     
-        model.add(Dense(10, activation='softmax'))
-        # the output will be 10 neurons, using softmax as activation
+        self.model.add(Dense(10, activation='softmax'))
+        # The input are 128 neurons
+        # The output are 10 neurons, each output representing a large feature 
+        #
+        # How many parameters?
+        # 128x10 + 10(bias) - 1290 parmeters
+    
         
-        
-        # pick an optimizer
+        # pick an optimizer for gradient descent with momentum optimizer
         opt = SGD(lr=0.001, momentum=0.9)
-    
         
         # compile the model
-        model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
-        
-        self.model = model
-    
+        self.compile_output = self.model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+     
     
     '''
     The model will be trained (fit) and
@@ -266,13 +362,9 @@ class myCIFAR10():
         
         ### Define and use a model
         self.define_model()
-        print("model weights:\n", self.model.get_weights())
-    
-        print("model summary before training/fitting:\n", self.model.summary())
-        #print("model:\n", model.get_weights())
-            
-        print("print model config:")
-        print(self.model.get_config())
+ 
+
+        # todo print to pdf before fitting
         
         ### FIT / TRAIN the model
         ## Sample - is a set of data, also called Rows Of Data
@@ -296,31 +388,42 @@ class myCIFAR10():
             batch_size=64,\
             validation_data=(self.testX, self.testY),\
             verbose=self.verbose)
+    
+
+        # The history dictionary will have these keys: 
+        # ['val_loss', 'val_acc', 'loss', 'acc']
+            
+        # todo print model after fitting
         
-        print("model summary after training/fitting:\n", self.model.summary())
-        print("model:\n", self.model.get_weights())    
-        
+
         # SAVE the trained model
         self.model.save(self.model_file_name)
         self.create_output_pdf()
         
         
             
-    def create_output_pdf(self):    
+    def create_output_pdf(self):
+        ### print plots
         pdf_plots  = PdfPages("output/" +  self.model_file_name + "_plots.pdf")
-#        doc_outliers = SimpleDocTemplate("output/" + filebase + "_outliers.pdf", pagesize=letter)
-#        doc_zeros    = SimpleDocTemplate("output/" + filebase + "_zeros.pdf", pagesize=letter)        
         
         # SAVE documentation of the trained model
+        # The history.history dictionary will have these keys: 
+        # ['val_loss', 'val_acc', 'loss', 'acc']
         # plot loss
         #print("fit_history", self.fit_history.history)
         pyplot.subplot(3, 1, 1)
         pyplot.title('Cross Entropy Loss')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
         pyplot.plot(self.fit_history.history['loss'], color='blue', label='train')
         pyplot.plot(self.fit_history.history['val_loss'], color='orange', label='test')
         # plot accuracy
         pyplot.subplot(3, 1, 3)
         pyplot.title('Classification Accuracy')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
         pyplot.plot(self.fit_history.history['acc'], color='blue', label='train')
         pyplot.plot(self.fit_history.history['val_acc'], color='orange', label='test')
         
@@ -331,31 +434,38 @@ class myCIFAR10():
         pdf_plots.close()
         
         
-        
+        ### create a text document with data
         doc_summary  = SimpleDocTemplate("output/" + self.model_file_name + "_summary.pdf", pagesize=letter)
     
         element = []
         header = Paragraph("\nSummary of Training Runs", styles["Heading1"])
         element.append(header)
-        
-        
-        # sort by standard deviation  
-        header = Paragraph("\nThe model", styles["Heading2"])
+                
+
+        header = Paragraph("\nThe model summary", styles["Heading2"])
         element.append(header)
-        print("model summary before training/fitting:\n", self.model.summary())
-        text = Paragraph(str(self.model.summary()),  styles["Normal"])
-        element.append(text)
-  
-        print(self.model.get_config())
-        #json_object = json.loads(self.model.get_config())
-        json_formatted_str = json.dumps(self.model.get_config(), indent=2)
-        text2 = Paragraph(str(json_formatted_str),  styles["Normal"])
-        element.append(text2)
+        f = io.StringIO() 
+        with redirect_stdout(f):
+            self.model.summary() 
+        s = f.getvalue()
+        print("model summary:\n", s)
+        para = XPreformatted(s, styles["Code"], dedent=0)
+        element.append(para)         
+
+        header = Paragraph("\nThe model layers and weights", styles["Heading2"])
+        element.append(header)
+        para = XPreformatted(str(self.model.get_weights()),  styles["Code"], dedent=0)
+        element.append(para)
+            
+        header = Paragraph("\nThe model configuration", styles["Heading2"])
+        element.append(header)
+        json_formatted_str = json.dumps(self.model.get_config(), indent=2, sort_keys=True)
+        print(json_formatted_str)
+        para = XPreformatted(json_formatted_str,  styles["Code"], dedent=0)
+        element.append(para)
     
-        
         doc_summary.build(element)
 
-       
             
     
     '''
