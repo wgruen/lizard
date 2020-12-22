@@ -9,6 +9,7 @@ from matplotlib import pyplot
 import argparse
 import yaml
 import json
+import pprint
 import io
 from contextlib import redirect_stdout
 
@@ -31,6 +32,7 @@ from keras.layers import Conv2D
 from keras.layers import MaxPooling2D
 from keras.layers import Dense
 from keras.layers import Flatten
+from keras.layers import Dropout
 from keras.optimizers import SGD
 from tensorflow import keras
 
@@ -39,11 +41,25 @@ from tensorflow import keras
 class myCIFAR10():
     def __init__(self, configuration):
         ### get the parameters
+        self.configuration = configuration
+        self.verbose = configuration["verbose"]
+        self.dropout_percentage = configuration["dropout_percentage"] / 100
+
         self.machine_dump_file_name_base = configuration["machine_dump_file_name_base"]
         self.number_of_epochs = configuration["number_of_epochs"]
-        self.model_file_name = self.machine_dump_file_name_base + "-epochs-" \
-            + str(self.number_of_epochs) + ".bin"
-        self.verbose = configuration["verbose"]
+        
+        self.model_file_name_base = self.machine_dump_file_name_base + \
+            "-3vgg" \
+            + "--epochs-" \
+            + str(self.number_of_epochs) \
+            + "--dropout-"  \
+            + str(self.dropout_percentage) 
+            
+
+        self.model_file_name = self.model_file_name_base + ".bin"
+        self.pdf_plots_file_name  = self.model_file_name_base + "_plots.pdf"
+        self.doc_summary_file_name  = self.model_file_name_base  + "_summary.pdf"
+        
             
     '''
     load the dataset
@@ -58,9 +74,9 @@ class myCIFAR10():
         # one hot encode target values
         # to_categorical returns a binary matrix
         self.trainY = to_categorical(self.trainY)
+
+
         self.testY = to_categorical(self.testY)
-
-
 
 
     def print_dataset(self):
@@ -169,6 +185,18 @@ class myCIFAR10():
         # one data point. The new value will be the max value of a 2x2 area.
         # Since it is a two dimensional pooling function, the 3rd dimension will be not be touched.
         # https://machinelearningmastery.com/pooling-layers-for-convolutional-neural-networks/
+
+
+
+        ### Dropout
+        # This can be used during training only and not used when making a prediction
+        # Dropout is a simpel way to prevent a network from overfitting
+        # Dropouts are not performed for the output layer
+        # Basically the dropout layer excludes x percent
+        # nodes during when updating the weights
+        # https://keras.io/api/layers/regularization_layers/dropout/
+        # https://machinelearningmastery.com/dropout-for-regularizing-deep-neural-networks/
+    
         
         ### Flatten
         # This will flatten the data in the array into a one dimesional array
@@ -239,6 +267,10 @@ class myCIFAR10():
         # The output is a reduced feature map
               
     
+        if(self.dropout_percentage is not 0):
+            self.model.add(Dropout(self.dropout_percentage))
+
+              
         
         self.model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
         # The output will be 64 filters/features.
@@ -276,6 +308,11 @@ class myCIFAR10():
         # The output is a feature of size 8x8
         # The output is a reduced feature map
         
+
+        if(self.dropout_percentage is not 0):
+            self.model.add(Dropout(self.dropout_percentage))
+
+
         
         self.model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
         # The output will be 128 filters/features.
@@ -316,6 +353,11 @@ class myCIFAR10():
         # The output are 384 neurons
         # The output is a feature of size 4x4
         # The output is a reduced feature map
+
+
+        if(self.dropout_percentage is not 0):
+            self.model.add(Dropout(self.dropout_percentage))
+
     
         # Flatten the array, go get ready for the Dense layers
         self.model.add(Flatten())
@@ -398,14 +440,16 @@ class myCIFAR10():
         
 
         # SAVE the trained model
-        self.model.save(self.model_file_name)
+        self.model.save("output/" + self.model_file_name)
         self.create_output_pdf()
         
         
             
     def create_output_pdf(self):
+        ##############################################
         ### print plots
-        pdf_plots  = PdfPages("output/" +  self.model_file_name + "_plots.pdf")
+        ##############################################
+        pdf_plots  = PdfPages("output/" +  self.pdf_plots_file_name)
         
         # SAVE documentation of the trained model
         # The history.history dictionary will have these keys: 
@@ -434,22 +478,34 @@ class myCIFAR10():
         pyplot.close()
         pdf_plots.close()
         
-        
+        ##############################################
         ### create a text document with data
-        doc_summary  = SimpleDocTemplate("output/" + self.model_file_name + "_summary.pdf", pagesize=letter)
+        ##############################################
+        doc_summary  = SimpleDocTemplate("output/" + self.doc_summary_file_name, pagesize=letter)
     
         element = []
         header = Paragraph("\nSummary of Training Runs", styles["Heading1"])
         element.append(header)
-                
+        
+        header = Paragraph("\nThe script's input parameters", styles["Heading2"])
+        element.append(header)
+        #pp = pprint.PrettyPrinter(indent=4)
+        #para = XPreformatted(pp.pprint(self.configuration),  styles["Code"], dedent=0)
+        #print(para)
+        #element.append(para)
+        #element.append(str("wolf test"))
+       # element.append(str(pp.pprint(self.configuration)))
+        element.append(Paragraph(str(yaml.dump(self.configuration, indent=4)),  styles["Normal"]))
 
+
+                
         header = Paragraph("\nThe model summary", styles["Heading2"])
         element.append(header)
         f = io.StringIO() 
         with redirect_stdout(f):
             self.model.summary() 
         s = f.getvalue()
-        print("model summary:\n", s)
+        #print("model summary:\n", s)
         para = XPreformatted(s, styles["Code"], dedent=0)
         element.append(para)         
 
@@ -461,7 +517,7 @@ class myCIFAR10():
         header = Paragraph("\nThe model configuration", styles["Heading2"])
         element.append(header)
         json_formatted_str = json.dumps(self.model.get_config(), indent=2, sort_keys=True)
-        print(json_formatted_str)
+        #print(json_formatted_str)
         para = XPreformatted(json_formatted_str,  styles["Code"], dedent=0)
         element.append(para)
     
@@ -481,7 +537,7 @@ class myCIFAR10():
         
         
         ## load a previously stored model
-        self.model = keras.models.load_model('keras_cifar-10.trained.bin')
+        self.model = keras.models.load_model("output/" + self.model_file_name)
     
     
         ## EVALUATE the previously trained model
@@ -498,17 +554,8 @@ def main(argv):
                         action='store', 
                         required=True,
                         help='The yaml file containing configuration')
-    
-    parser.add_argument("--train",  action='store_true', 
-                    #    required=False,
-                        help='train the machine')
-    
-    parser.add_argument("--validate", action='store_true', 
-                     #   required=False,
-                        help='vaiidate the machine')
     args = parser.parse_args()
     #print(args)
-       
        
     configuration = None
     with open(args.input_config_file, 'r') as stream:
@@ -518,14 +565,14 @@ def main(argv):
     
     mymodel = myCIFAR10(configuration)
 
-    if args.train:
+
+    if(configuration["fit_the_model"] is 1):
         mymodel.fit_model()
         
-    if args.validate:     
+    if(configuration["evaluate_the_model"] is 1):
         mymodel.evaluate_data()
 
     
-
 
 if __name__ == '__main__':
     main(sys.argv[1:])
