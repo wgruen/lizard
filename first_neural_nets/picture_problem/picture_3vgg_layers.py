@@ -35,6 +35,7 @@ from keras.layers import Flatten
 from keras.layers import Dropout
 from keras.optimizers import SGD
 from tensorflow import keras
+from keras.regularizers import l2
 
 
 
@@ -53,7 +54,9 @@ class myCIFAR10():
             + "--epochs-" \
             + str(self.number_of_epochs) \
             + "--dropout-"  \
-            + str(self.dropout_percentage) 
+            + str(self.dropout_percentage) \
+            + "--l2_reg-" \
+            + str(configuration["mkernel_regularizer_l2"])
             
 
         self.model_file_name = self.model_file_name_base + ".bin"
@@ -197,14 +200,18 @@ class myCIFAR10():
         # https://keras.io/api/layers/regularization_layers/dropout/
         # https://machinelearningmastery.com/dropout-for-regularizing-deep-neural-networks/
     
-        
+        ### kernel regulizer
+        # The kernel regulizer can ve used when overfitting has 
+        # been observed in a model
+        #
+        # https://www.tensorflow.org/api_docs/python/tf/keras/regularizers/L2
+        # https://keras.io/api/layers/regularizers/
+    
         ### Flatten
         # This will flatten the data in the array into a one dimesional array
         # https://keras.io/api/layers/reshaping_layers/flatten/
         
         ### Dense
-        
-        
         # https://keras.io/api/layers/core_layers/dense/
         
         
@@ -225,8 +232,17 @@ class myCIFAR10():
         ### The model is created below
         ### This model has 3 VGG layers (Visual Geometry Groups)
         #######################################################################
+  
+        my_kernel_regularizer = None
+        if("kernel_regularizer_l2" in self.configuration):
+           my_kernel_regularizer = l2(self.configuration["kernel_regularizer_l2"])
+        else:
+           my_kernel_regularizer = l2()   # use the default
+        print("my_kernel_regularizer", my_kernel_regularizer.get_config())
+    
         
-        self.model.add(Conv2D(filters=32, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=(32, 32, 3)))
+        self.model.add(Conv2D(filters=32, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform',\
+                              padding='same', kernel_regularizer = my_kernel_regularizer, input_shape=(32, 32, 3)))
         # We are training 32 convolution filters. Eeach filter shall identify 
         # a feature in the picture.
         # The output are 32 features. 
@@ -244,7 +260,8 @@ class myCIFAR10():
         # One bias parameter is Added for each filter (32) 
         # 96x3x3(864)  + 32(bias) = 896 prameters 
         
-        self.model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        self.model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', \
+                              padding='same', kernel_regularizer = my_kernel_regularizer))
         # We are training 32 convolution filters.
         # The output are 32 (refined?) features. 
         #
@@ -272,7 +289,8 @@ class myCIFAR10():
 
               
         
-        self.model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        self.model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', \
+                              padding='same', kernel_regularizer = my_kernel_regularizer))
         # The output will be 64 filters/features.
         # Basically now we are looking for smaller features within the picture
         #
@@ -288,7 +306,8 @@ class myCIFAR10():
         # 192x96 + 64(bias) = 18496 parameters
         
         
-        self.model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        self.model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', \
+                              padding='same', kernel_regularizer = my_kernel_regularizer))
         # The output wil be 64 filters/Refined Features
         #
         # How many neurons are in that layer?
@@ -314,7 +333,8 @@ class myCIFAR10():
 
 
         
-        self.model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        self.model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform',\
+                              padding='same', kernel_regularizer = my_kernel_regularizer))
         # The output will be 128 filters/features.
         # Basically now we are looking for smaller features within the picture
         #
@@ -330,7 +350,8 @@ class myCIFAR10():
         # 384x192 + 128(bias) = 73856 parameters
         
         
-        self.model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+        self.model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', \
+                              padding='same', kernel_regularizer = my_kernel_regularizer))
         # The output wil be 128 filters/Refined Features
         #
         # How many neurons are in that layer?
@@ -489,14 +510,7 @@ class myCIFAR10():
         
         header = Paragraph("\nThe script's input parameters", styles["Heading2"])
         element.append(header)
-        #pp = pprint.PrettyPrinter(indent=4)
-        #para = XPreformatted(pp.pprint(self.configuration),  styles["Code"], dedent=0)
-        #print(para)
-        #element.append(para)
-        #element.append(str("wolf test"))
-       # element.append(str(pp.pprint(self.configuration)))
         element.append(Paragraph(str(yaml.dump(self.configuration, indent=4)),  styles["Normal"]))
-
 
                 
         header = Paragraph("\nThe model summary", styles["Heading2"])
@@ -509,17 +523,18 @@ class myCIFAR10():
         para = XPreformatted(s, styles["Code"], dedent=0)
         element.append(para)         
 
-        header = Paragraph("\nThe model layers and weights", styles["Heading2"])
-        element.append(header)
-        para = XPreformatted(str(self.model.get_weights()),  styles["Code"], dedent=0)
-        element.append(para)
-            
         header = Paragraph("\nThe model configuration", styles["Heading2"])
         element.append(header)
         json_formatted_str = json.dumps(self.model.get_config(), indent=2, sort_keys=True)
         #print(json_formatted_str)
         para = XPreformatted(json_formatted_str,  styles["Code"], dedent=0)
         element.append(para)
+        
+        header = Paragraph("\nThe model layers and weights", styles["Heading2"])
+        element.append(header)
+        para = XPreformatted(str(self.model.get_weights()),  styles["Code"], dedent=0)
+        element.append(para)
+            
     
         doc_summary.build(element)
 
