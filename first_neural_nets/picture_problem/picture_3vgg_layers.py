@@ -45,10 +45,13 @@ class myCIFAR10():
         self.configuration = configuration
         self.verbose = configuration["verbose"]
         self.dropout_percentage = configuration["dropout_percentage"] / 100
-
-        self.machine_dump_file_name_base = configuration["machine_dump_file_name_base"]
+        self.mkernel_regularizer_l2 = configuration["mkernel_regularizer_l2"]
         self.number_of_epochs = configuration["number_of_epochs"]
+        self.machine_dump_file_name_base = configuration["machine_dump_file_name_base"]
         
+
+    def set_file_names(self):
+                
         self.model_file_name_base = self.machine_dump_file_name_base + \
             "-3vgg" \
             + "--epochs-" \
@@ -56,7 +59,7 @@ class myCIFAR10():
             + "--dropout-"  \
             + str(self.dropout_percentage) \
             + "--l2_reg-" \
-            + str(configuration["mkernel_regularizer_l2"])
+            + str(self.mkernel_regularizer_l2)
             
 
         self.model_file_name = self.model_file_name_base + ".bin"
@@ -233,11 +236,8 @@ class myCIFAR10():
         ### This model has 3 VGG layers (Visual Geometry Groups)
         #######################################################################
   
-        my_kernel_regularizer = None
-        if("kernel_regularizer_l2" in self.configuration):
-           my_kernel_regularizer = l2(self.configuration["kernel_regularizer_l2"])
-        else:
-           my_kernel_regularizer = l2()   # use the default
+        # set the regularizer
+        my_kernel_regularizer = l2(self.mkernel_regularizer_l2)
         print("my_kernel_regularizer", my_kernel_regularizer.get_config())
     
         
@@ -416,6 +416,9 @@ class myCIFAR10():
     
     '''
     def fit_model(self):
+        # set the file names for a run
+        self.set_file_names()
+        
         ### load and prepare the dataset
         self.load_dataset()
         self.print_dataset()
@@ -512,6 +515,15 @@ class myCIFAR10():
         element.append(header)
         element.append(Paragraph(str(yaml.dump(self.configuration, indent=4)),  styles["Normal"]))
 
+
+        header = Paragraph("\nThe class / runs parameters", styles["Heading2"])
+        element.append(header)
+        text = "dropout_percentage: " + str(self.dropout_percentage) +\
+            "\nmkernel_regularizer_l2: " + str(self.mkernel_regularizer_l2) +\
+            "\nnumber_of_epochs: " + str(self.number_of_epochs) 
+        element.append(Paragraph(str(text), styles["Normal"]))
+
+
                 
         header = Paragraph("\nThe model summary", styles["Heading2"])
         element.append(header)
@@ -578,13 +590,15 @@ def main(argv):
         
     print(yaml.safe_dump(configuration, default_flow_style=False, default_style=None))
     
-    mymodel = myCIFAR10(configuration)
-
 
     if(configuration["fit_the_model"] is 1):
-        mymodel.fit_model()
+        for kernel_regulror_l1l2 in configuration["mkernel_regularizer_l2_range"]:
+            configuration["mkernel_regularizer_l2"] = kernel_regulror_l1l2
+            mymodel = myCIFAR10(configuration)
+            mymodel.fit_model()
         
     if(configuration["evaluate_the_model"] is 1):
+        mymodel = myCIFAR10(configuration)
         mymodel.evaluate_data()
 
     
