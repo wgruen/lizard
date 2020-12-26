@@ -9,7 +9,11 @@ evaluate_the_model: 0
 
 
 number_of_epochs: 1
-dropout_percentage: 20
+
+
+# a dropout of 20 percent may be used as starting point for pictures
+dropout_percentage_range: [10, 20, 30, 40]
+
 
 # the default value for the L1L2 regulator is 0.01
 mkernel_regularizer_l2_range: [0.1, 0.01, 0.001, 0.0001]

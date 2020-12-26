@@ -11,6 +11,7 @@ import yaml
 import json
 import pprint
 import io
+import os
 from contextlib import redirect_stdout
 
 import matplotlib.pyplot as plt
@@ -134,7 +135,6 @@ class myCIFAR10():
     '''
     def define_model(self):
         self.model = Sequential()
-        
        
         # input shape
         # The pictures (data) is measuring 32 by 32 pixels squares
@@ -513,15 +513,19 @@ class myCIFAR10():
         
         header = Paragraph("\nThe script's input parameters", styles["Heading2"])
         element.append(header)
-        element.append(Paragraph(str(yaml.dump(self.configuration, indent=4)),  styles["Normal"]))
-
+        text = yaml.dump(self.configuration, indent=4)
+        print(text)
+        para = XPreformatted(text, styles["Code"], dedent=0)
+        element.append(para)
 
         header = Paragraph("\nThe class / runs parameters", styles["Heading2"])
         element.append(header)
-        text = "dropout_percentage: " + str(self.dropout_percentage) +\
-            "\nmkernel_regularizer_l2: " + str(self.mkernel_regularizer_l2) +\
-            "\nnumber_of_epochs: " + str(self.number_of_epochs) 
-        element.append(Paragraph(str(text), styles["Normal"]))
+        text = "dropout_percentage: " + str(self.dropout_percentage) + os.linesep +\
+            "mkernel_regularizer_l2: " + str(self.mkernel_regularizer_l2) + os.linesep +\
+            "number_of_epochs: " + str(self.number_of_epochs) 
+        print(text)
+        para = XPreformatted(text, styles["Code"], dedent=0)
+        element.append(para)
 
 
                 
@@ -594,8 +598,10 @@ def main(argv):
     if(configuration["fit_the_model"] is 1):
         for kernel_regulror_l1l2 in configuration["mkernel_regularizer_l2_range"]:
             configuration["mkernel_regularizer_l2"] = kernel_regulror_l1l2
-            mymodel = myCIFAR10(configuration)
-            mymodel.fit_model()
+            for dropout in configuration["dropout_percentage_range"]:
+                configuration["dropout_percentage"] = dropout
+                mymodel = myCIFAR10(configuration)
+                mymodel.fit_model()
         
     if(configuration["evaluate_the_model"] is 1):
         mymodel = myCIFAR10(configuration)
