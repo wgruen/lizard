@@ -22,7 +22,7 @@ from numpy.random import seed
 from numpy.random import randn
 from numpy import mean
 from numpy import std
-#from sklearn.cluster import KMeans
+
 from numpy import percentile
 
 from reportlab.pdfgen import canvas
@@ -35,7 +35,7 @@ styles = getSampleStyleSheet()
 
 
 from sklearn.cluster import KMeans
-#%matplotlib inline
+
 
 
 

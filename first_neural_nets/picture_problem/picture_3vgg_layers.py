@@ -243,10 +243,8 @@ class myCIFAR10():
         
         self.model.add(Conv2D(filters=32, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform',\
                               padding='same', kernel_regularizer = my_kernel_regularizer, input_shape=(32, 32, 3)))
-        # We are training 32 convolution filters. Eeach filter shall identify 
-        # a feature in the picture.
-        # The output are 32 features. 
-        # The shape for each feature will be in the original size of the picture.
+        # We are training 32 convolution filters. Each filter will be trained 
+        # to detect low level features, like lines and curves.
         #
         # How many neurons are in that layer?
         # There are 32 filters
@@ -256,14 +254,13 @@ class myCIFAR10():
         #
         # How many parameters to trained?
         # There are 96 neurons
-        # Each filter is 3x3
+        # Each filter is 3x3 (depth was already included before)
         # One bias parameter is Added for each filter (32) 
-        # 96x3x3(864)  + 32(bias) = 896 prameters 
+        # 96x3x3(864)  + 32(bias=#filters) = 896 prameters 
         
         self.model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', \
                               padding='same', kernel_regularizer = my_kernel_regularizer))
         # We are training 32 convolution filters.
-        # The output are 32 (refined?) features. 
         #
         # How many neurons are in that layer?
         # The previous filter has 96 neurons
@@ -276,12 +273,12 @@ class myCIFAR10():
    
         self.model.add(MaxPooling2D(pool_size=(2, 2)))
         # The input will be 32 filters
-        # The input size is 96 neurons
-        # The input is a feature of size 32x32
+        # The input size are 96 neurons
+        # The input are  small feature of size 32x32
         # The output will be 32 filters
         # The output are 96 neurons
         # The output is a feature of size 16x16
-        # The output is a reduced feature map
+        # The output is a reduced feature map, where noise has been reduced
               
     
         if(self.dropout_percentage is not 0):
@@ -291,8 +288,10 @@ class myCIFAR10():
         
         self.model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', kernel_initializer='he_uniform', \
                               padding='same', kernel_regularizer = my_kernel_regularizer))
-        # The output will be 64 filters/features.
-        # Basically now we are looking for smaller features within the picture
+        # The output will be 64 filters.
+        # We are training filters, which identfy small features or 
+        # combinations of the low level features, based on the
+        # low level features which were trained before
         #
         # How many neurons are in that layer?
         # There are 64 filters
@@ -303,12 +302,12 @@ class myCIFAR10():
         # This layer is 192 neurons
         # The previous layer has 96 neurons
         # One bias parameter is Added for each filter (64) 
-        # 192x96 + 64(bias) = 18496 parameters
+        # 192x96 + 64(bias=#filters) = 18496 parameters
         
         
         self.model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', \
                               padding='same', kernel_regularizer = my_kernel_regularizer))
-        # The output wil be 64 filters/Refined Features
+        # The output wil be 64 filters for small features
         #
         # How many neurons are in that layer?
         # This layer has 192 neurons
@@ -321,11 +320,11 @@ class myCIFAR10():
         self.model.add(MaxPooling2D((2, 2)))
         # The input will be 64 filters
         # The input size is 192 neurons
-        # The input is a feature of size 16x16
+        # The input is a filter/feature of size 16x16
         # The output will be 64 filters
         # The output are 192 neurons
         # The output is a feature of size 8x8
-        # The output is a reduced feature map
+        # The output is a reduced feature map, where noice has been reduced
         
 
         if(self.dropout_percentage is not 0):
@@ -335,8 +334,8 @@ class myCIFAR10():
         
         self.model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform',\
                               padding='same', kernel_regularizer = my_kernel_regularizer))
-        # The output will be 128 filters/features.
-        # Basically now we are looking for smaller features within the picture
+        # We are training 128 filters/features.
+        # The filters will identify larger features
         #
         # How many neurons are in that layer?
         # There are 128 filters
@@ -347,7 +346,7 @@ class myCIFAR10():
         # This layer is 384 neurons
         # The previous layer has 192 neurons
         # One bias parameter is Added for each filter (128) 
-        # 384x192 + 128(bias) = 73856 parameters
+        # 384x192 + 128(bias=#filters) = 73856 parameters
         
         
         self.model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', \
@@ -389,6 +388,8 @@ class myCIFAR10():
         # The output has 128x4x4 - 2048 neurons
         
         self.model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
+        # We are traning a fully connected layer
+        #
         # The input are 2048 neurons
         # The output are 128 neurons
         #
@@ -464,7 +465,7 @@ class myCIFAR10():
         
 
         # SAVE the trained model
-        self.model.save("output/" + self.model_file_name)
+        self.model.save(self.model_file_name)
         self.create_output_pdf()
         
         
@@ -479,22 +480,23 @@ class myCIFAR10():
         # The history.history dictionary will have these keys: 
         # ['val_loss', 'val_acc', 'loss', 'acc']
         # plot loss
-        #print("fit_history", self.fit_history.history)
+        print("fit_history", self.fit_history.history)
+        
         pyplot.subplot(3, 1, 1)
         pyplot.title('Cross Entropy Loss')
         plt.ylabel('accuracy')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
-        pyplot.plot(self.fit_history.history['loss'], color='blue', label='train')
-        pyplot.plot(self.fit_history.history['val_loss'], color='orange', label='test')
+        pyplot.plot(self.fit_history.history['loss'], color='blue', label='train model')
+        pyplot.plot(self.fit_history.history['val_loss'], color='orange', label='validate model')
         # plot accuracy
         pyplot.subplot(3, 1, 3)
         pyplot.title('Classification Accuracy')
         plt.ylabel('loss')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
-        pyplot.plot(self.fit_history.history['acc'], color='blue', label='train')
-        pyplot.plot(self.fit_history.history['val_acc'], color='orange', label='test')
+        pyplot.plot(self.fit_history.history['accuracy'], color='blue', label='train_model')
+        pyplot.plot(self.fit_history.history['val_accuracy'], color='orange', label='validate_model')
         
         # save plot to file
         pyplot.savefig(pdf_plots, format='pdf') #, bbox_inches='tight')
@@ -568,7 +570,7 @@ class myCIFAR10():
         
         
         ## load a previously stored model
-        self.model = keras.models.load_model("output/" + self.model_file_name)
+        self.model = keras.models.load_model(self.model_file_name)
     
     
         ## EVALUATE the previously trained model
