@@ -39,7 +39,6 @@ from tensorflow import keras
 from keras.regularizers import l2
 
 
-
 class myCIFAR10():
     def __init__(self, configuration):
         ### get the parameters
@@ -482,27 +481,33 @@ class myCIFAR10():
         # plot loss
         print("fit_history", self.fit_history.history)
         
+    
+        
         pyplot.subplot(3, 1, 1)
         pyplot.title('Cross Entropy Loss')
-        plt.ylabel('accuracy')
+        plt.ylabel('Loss')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
         pyplot.plot(self.fit_history.history['loss'], color='blue', label='train model')
         pyplot.plot(self.fit_history.history['val_loss'], color='orange', label='validate model')
+        
         # plot accuracy
         pyplot.subplot(3, 1, 3)
         pyplot.title('Classification Accuracy')
-        plt.ylabel('loss')
+        plt.ylabel('Accuracy')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
         pyplot.plot(self.fit_history.history['accuracy'], color='blue', label='train_model')
         pyplot.plot(self.fit_history.history['val_accuracy'], color='orange', label='validate_model')
+        
+        
         
         # save plot to file
         pyplot.savefig(pdf_plots, format='pdf') #, bbox_inches='tight')
         pyplot.plot()
         pyplot.close()
         pdf_plots.close()
+        
         
         ##############################################
         ### create a text document with data
