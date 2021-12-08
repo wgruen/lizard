@@ -1,7 +1,4 @@
-# lizard
-
-1)
-IThis machine is using keras. In order to do experiments, there is a YAML configuration file as input.
+This machine is using keras. In order to do experiments, there is a YAML configuration file as input.
 The main challenge is the design of the machine. 
 
 For this simple problem, the input data is provided in an array.
