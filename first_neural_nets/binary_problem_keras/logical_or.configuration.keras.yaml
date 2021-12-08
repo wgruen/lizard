@@ -1,0 +1,36 @@
+Description:
+    information
+
+
+fit_the_model: 1
+evaluate_the_model: 1
+
+
+number_of_epochs: 3000
+
+# a dropout of 20 percent may be used as starting point for pictures
+# range [0 .. 100]
+#dropout_percentage_range: [10, 20, 30, 40]
+dropout_percentage_range: [10]  # for tests
+
+
+# the default value for the L1L2 regulator is 0.01
+#mkernel_regularizer_l2_range: [0.1, 0.01, 0.001, 0.0001]
+mkernel_regularizer_l2_range: [0.1]  # for tests
+
+
+verbose: 1
+machine_dump_file_name_base: "kera.cifar-10.trained"
+ 
+ 
+ 
+training_data:
+    training_data_file_name: "logical_or.data.train.cvs"
+    number_of_input_neurons:    3
+    number_of_hidden_neurons:   4
+    number_of_hidden_layers:    1   
+    number_of_outputs_neurons:  1
+
+    
+  
+validation_data: "logical_or.data.validate.cvs"   

@@ -1,0 +1,24 @@
+Description:
+    The initial test set uses binary data. The data set is for Supervised Learning, the machine should tune itself to find a specific pattern.
+    The input values are supposed to represent the values zero and one, although a machine can be trained better with fuzzy values which are not a One or a zero.
+
+    Values which are close to "0" reprent a zero
+    Values which are close to "1" represent a one.
+
+The data file format:
+    "input_1   input_2   input_3   output_1"
+
+
+
+training_data:
+    training_data_file_name: "logical_or.data.train.cvs"
+    number_of_input_neurons:    3
+    number_of_hidden_neurons:   4
+    number_of_hidden_layers:    1   
+    number_of_outputs_neurons:  1
+    number_of_training_iterations: 100000
+    
+
+machine_dump_file_name: "logical_or.trained.machine.bin"
+    
+validation_data: "logical_or.data.validate.cvs"

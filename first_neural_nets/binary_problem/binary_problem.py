@@ -124,6 +124,7 @@ def calculate(configuration):
  
     
     test_data = np.loadtxt(configuration["validation_data"])
+    test_data =  test_data[:, :-1] # for all but last column
 
     test_data = np.array(test_data, dtype=np.dtype(decimal.Decimal))
      
