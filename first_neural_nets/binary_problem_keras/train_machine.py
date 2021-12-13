@@ -26,7 +26,7 @@ def main(argv):
         
     print(yaml.safe_dump(configuration, default_flow_style=False, default_style=None))
     
-    if(configuration["fit_the_model"] == 1):
+    if(configuration["fit_the_model"] is 1):
         for kernel_regulror_l1l2 in configuration["mkernel_regularizer_l2_range"]:
             configuration["mkernel_regularizer_l2"] = kernel_regulror_l1l2
             for dropout in configuration["dropout_percentage_range"]:

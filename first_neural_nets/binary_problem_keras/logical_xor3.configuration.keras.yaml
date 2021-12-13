@@ -1,0 +1,53 @@
+Description:
+    information
+
+
+fit_the_model: 1
+predict_the_model: 1
+
+
+
+# a dropout of 20 percent may be used as starting point for pictures
+# range [0 .. 100]
+#dropout_percentage_range: [10, 20, 30, 40]
+dropout_percentage_range: [10]  # for this problem
+
+
+# the default value for the L1L2 regulator is 0.01
+#mkernel_regularizer_l2_range: [0.1, 0.01, 0.001, 0.0001]
+mkernel_regularizer_l2_range: [0.1]  # for this problem
+
+machine:
+    verbose: 1
+    machine_dump_file_name_base: "logical_xor3_trained"
+    
+    validate_data_during_fitting: 0
+    shuffle_data: True
+    batch_size: 1  # 32 is the default
+    number_of_epochs: 3000 # 10000 works for cros entropy
+    
+    bias_initializer: 'ones'
+    
+ #   learning_rate: 0.1
+    learning_rate: 0.01 # default for Adams is 0.001, 0.01 works with cross entropy
+    #loss_function: 'binary_crossentropy'
+    loss_function: 'MeanSquaredError'
+
+      
+    # compistion of the engine
+    number_of_input_neurons:    3
+    number_of_hidden_neurons_layers_1:  5 # 5 5 6
+    number_of_hidden_neurons_layers_2:  0 # 2 0 0
+    # batch                                 5 1
+    number_of_outputs_neurons:  1
+    
+ 
+ 
+ 
+training_data:
+    training_data_file_name: "logical_xor3.data.train.cvs"
+    
+
+    
+  
+validation_data: "logical_or3.data.validate.cvs"   

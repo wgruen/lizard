@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 
-# https://machinelearningmastery.com/how-to-develop-a-cnn-from-scratch-for-cifar-10-photo-classification/
-# https://towardsdatascience.com/a-beginners-guide-to-convolutional-neural-networks-cnns-14649dbddce8
-
 import sys
 from matplotlib import pyplot
 import argparse
@@ -41,17 +38,18 @@ from keras.layers import Dropout
 from keras.optimizers import SGD
 from tensorflow import keras
 from keras.regularizers import l2
+import keras.optimizers 
 
 
 class binary_with_keras():
     def __init__(self, configuration):
         ### get the parameters
         self.configuration = configuration
-        self.verbose = configuration["verbose"]
+        self.verbose = configuration["machine"]["verbose"]
         self.dropout_percentage = configuration["dropout_percentage"] / 100
         self.mkernel_regularizer_l2 = configuration["mkernel_regularizer_l2"]
-        self.number_of_epochs = configuration["number_of_epochs"]
-        self.machine_dump_file_name_base = configuration["machine_dump_file_name_base"]
+        self.number_of_epochs = configuration["machine"]["number_of_epochs"]
+        self.machine_dump_file_name_base = configuration["machine"]["machine_dump_file_name_base"]
         self.set_file_names()
         
 
@@ -155,11 +153,15 @@ class binary_with_keras():
     def define_model(self):
         
         
-        number_of_input_neurons   = self.configuration["training_data"]["number_of_input_neurons"]
-        number_of_hidden_neurons  = self.configuration["training_data"]["number_of_hidden_neurons"]
-        number_of_hidden_layers   = self.configuration["training_data"]["number_of_hidden_layers"]
-        number_of_outputs_neurons = self.configuration["training_data"]["number_of_outputs_neurons"]
-
+        number_of_input_neurons   = self.configuration["machine"]["number_of_input_neurons"]
+        number_of_hidden_neurons_layers_1  = self.configuration["machine"]["number_of_hidden_neurons_layers_1"]
+        number_of_hidden_neurons_layers_2   = self.configuration["machine"]["number_of_hidden_neurons_layers_2"]
+        number_of_outputs_neurons = self.configuration["machine"]["number_of_outputs_neurons"]
+        my_learning_rate = self.configuration["machine"]["learning_rate"]
+        my_loss = self.configuration["machine"]["loss_function"] 
+        my_bias_initializer = self.configuration["machine"]["bias_initializer"] 
+        
+        
         # https://machinelearningmastery.com/tutorial-first-neural-network-python-keras/
         
         self.model = Sequential()
@@ -170,24 +172,33 @@ class binary_with_keras():
         #
         # the first hidden layer has 4 nodes
         
-        self.model.add(Dense(6, input_dim=3, activation='relu'))
+        self.model.add(Dense(
+            number_of_hidden_neurons_layers_1,
+            input_dim=number_of_input_neurons,
+            activation='relu',
+            bias_initializer=my_bias_initializer))
         
-        # The hidden layer shall have 4 Neurons
-        # one hidden layer should be sufficient for the 
-        # majority of problem :-)
+        # One hidden layer should be sufficient for the 
+        # majority of problems :-)
         # Hidden layers are required only, and only if the data 
         # must be separated non-linearly
-        # self.model.add(Dense(4, activation='relu'))
+        if number_of_hidden_neurons_layers_2 is 1:
+            self.model.add(Dense(
+                number_of_hidden_neurons_layers_2, 
+                activation='relu',
+                bias_initializer=my_bias_initializer))
         
         # The output layer should be one Neuron
-        self.model.add(Dense(1, activation='sigmoid'))
+        self.model.add(Dense(number_of_outputs_neurons, activation='sigmoid'))
      
         # pick an optimizer for gradient descent with momentum optimizer
         #opt = SGD(lr=0.001, momentum=0.9)
+        my_optimizer = keras.optimizers.Adam(learning_rate=my_learning_rate)
+        
         
         # compile the model
-        self.compile_output = self.model.compile(optimizer='SGD', loss='binary_crossentropy') #, metrics=['accuracy'])
-        
+      #  self.compile_output = self.model.compile(optimizer='SGD', loss='binary_crossentropy') #, metrics=['accuracy'])
+        self.compile_output = self.model.compile(loss=my_loss, optimizer=my_optimizer)        
         
         print(self.model.summary()) 
      #   sys.exit()
@@ -234,12 +245,28 @@ class binary_with_keras():
         # https://machinelearningmastery.com/difference-between-a-batch-and-an-epoch/
         
         self.print_dataset()
-     
-        self.fit_history = self.model.fit(self.trainX, self.trainY,\
+        
+        
+        validate_data_during_fitting   = self.configuration["machine"]["validate_data_during_fitting"] 
+        shuffle_data = self.configuration["machine"]["shuffle_data"]
+        batch_size = self.configuration["machine"]["batch_size"]
+
+        
+        
+        if validate_data_during_fitting is 0:        
+            self.fit_history = self.model.fit(self.trainX, self.trainY,\
             epochs=self.number_of_epochs,\
-            batch_size=1,\
+            batch_size=batch_size,\
+            #validation_data=(self.testX, self.testY),\
+            verbose=self.verbose,
+            shuffle=shuffle_data)
+        else:
+            self.fit_history = self.model.fit(self.trainX, self.trainY,\
+            epochs=self.number_of_epochs,\
+            batch_size=batch_size,\
             validation_data=(self.testX, self.testY),\
-            verbose=self.verbose)
+            verbose=self.verbose,
+            shuffle=shuffle_data)
     
 
         # The history dictionary will have these keys: 
@@ -277,7 +304,7 @@ class binary_with_keras():
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
         pyplot.plot(self.fit_history.history['loss'], color='blue', label='train model')
-        pyplot.plot(self.fit_history.history['val_loss'], color='orange', label='validate model')
+   #     pyplot.plot(self.fit_history.history['val_loss'], color='orange', label='validate model')
         
         # plot accuracy
         #pyplot.subplot(3, 1, 3)
@@ -332,7 +359,34 @@ class binary_with_keras():
         s = f.getvalue()
         #print("model summary:\n", s)
         para = XPreformatted(s, styles["Code"], dedent=0)
-        element.append(para)         
+        element.append(para)    
+        
+        header = Paragraph("\nTrain X values", styles["Heading2"])
+        element.append(header)
+        text = str(self.trainX)       
+        para = XPreformatted(text, styles["Code"], dedent=0)
+        element.append(para)        
+        
+        header = Paragraph("\nTrain Y values", styles["Heading2"])
+        element.append(header)
+        text = str(self.trainY)   
+        para = XPreformatted(text, styles["Code"], dedent=0)
+        element.append(para)   
+        
+        validate_data_during_fitting = self.configuration["machine"]["validate_data_during_fitting"]
+        if validate_data_during_fitting is 1:
+            header = Paragraph("\nValidate X values", styles["Heading2"])
+            element.append(header)
+            text = str(self.trainX)       
+            para = XPreformatted(text, styles["Code"], dedent=0)
+            element.append(para)   
+        
+            header = Paragraph("\nValdiate Y values", styles["Heading2"])
+            element.append(header)
+            text = str(self.trainY)
+            para = XPreformatted(text, styles["Code"], dedent=0)
+            element.append(para)   
+            
 
         header = Paragraph("\nThe model configuration", styles["Heading2"])
         element.append(header)
@@ -420,7 +474,7 @@ def main(argv):
                 mymodel = binary_with_keras(configuration)
                 mymodel.fit_model()
             
-    if(configuration["evaluate_the_model"] == 1):
+    if(configuration["predict_the_model"] == 1):
         mymodel = binary_with_keras(configuration)
         mymodel.predict_data()
 

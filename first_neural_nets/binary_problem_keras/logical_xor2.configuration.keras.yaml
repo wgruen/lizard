@@ -6,7 +6,7 @@ fit_the_model: 1
 predict_the_model: 1
 
 
-number_of_epochs: 3000
+number_of_epochs: 10000
 
 # a dropout of 20 percent may be used as starting point for pictures
 # range [0 .. 100]
@@ -16,26 +16,22 @@ dropout_percentage_range: [10]  # for tests
 
 # the default value for the L1L2 regulator is 0.01
 #mkernel_regularizer_l2_range: [0.1, 0.01, 0.001, 0.0001]
-mkernel_regularizer_l2_range: [0.01]  # for tests
+mkernel_regularizer_l2_range: [0.1]  # for tests
 
 
 verbose: 1
-machine_dump_file_name_base: "logical_or.trained"
+machine_dump_file_name_base: "logical_xor2_trained"
  
-
-
-
-
+ 
  
 training_data:
-    training_data_file_name: "logical_or.data.train.cvs"
-    number_of_input_neurons:    3
-    number_of_hidden_neurons_layers_1:  3  
+    training_data_file_name: "logical_xor2.data.train.cvs"
+    number_of_input_neurons:    2
+    number_of_hidden_neurons_layers_1:  2
     number_of_hidden_neurons_layers_2:  0
     number_of_outputs_neurons:  1
     validate_data_during_fitting: 0
-    
 
     
   
-validation_data: "logical_or.data.validate.cvs"   
+validation_data: "logical_or2.data.validate.cvs"   
