@@ -1,10 +1,44 @@
 Description:
-    information
-
-
-fit_the_model: 1
-predict_the_model: 1
-
+    The model was trained with the dataset "training_data_embedded""
+    
+    There are four configurations, where the total error was minimal
+    The 1st hidden layer with 4 nodes and the 2nd hidden layer with 4 nodes
+    The 1st hidden layer with 8 nodes and the 2nd hidden layer with 2 nodes
+    The 1st hidden layer with 8 nodes and the 2nd hidden layer with 4 nodes
+    
+  ['logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-2--hl2-0' '[9.1016]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-2--hl2-2' '[9.8335]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-2--hl2-3' '[2.3261]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-2--hl2-4' '[5.0074]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-3--hl2-0' '[2.5036]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-3--hl2-2' '[9.5670]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-3--hl2-3' '[4.0488]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-3--hl2-4' '[5.0926]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-4--hl2-0' '[1.8073]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-4--hl2-2' '[4.0139]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-4--hl2-3' '[6.5745]'
+ 
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-4--hl2-4' '[0.0190]'
+ 
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-5--hl2-0' '[5.3571]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-5--hl2-2' '[2.0003]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-5--hl2-3' '[8.3557]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-5--hl2-4' '[4.0003]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-6--hl2-0' '[4.8063]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-6--hl2-2' '[2.0003]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-6--hl2-3' '[6.6450]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-6--hl2-4' '[2.0008]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-7--hl2-0' '[6.6214]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-7--hl2-2' '[2.0007]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-7--hl2-3' '[2.0340]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-7--hl2-4' '[6.2912]'
+ 
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-8--hl2-0' '[0.0022]'
+ 
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-8--hl2-2' '[1.9966]'
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-8--hl2-3' '[2.0002]'
+ 
+ 'logical_xor3_trained-3vgg--epochs-10000--i-3--hl1-8--hl2-4' '[0.0564]']
 
 
 # a dropout of 20 percent may be used as starting point for pictures
@@ -18,36 +52,86 @@ dropout_percentage_range: [10]  # for this problem
 mkernel_regularizer_l2_range: [0.1]  # for this problem
 
 machine:
-    verbose: 1
+    verbose: 0
     machine_dump_file_name_base: "logical_xor3_trained"
     
     validate_data_during_fitting: 0
+    
+    number_of_epochs: 10000
     shuffle_data: True
-    batch_size: 1  # 32 is the default
-    number_of_epochs: 3000 # 10000 works for cros entropy
-    
-    bias_initializer: 'ones'
-    
- #   learning_rate: 0.1
-    learning_rate: 0.01 # default for Adams is 0.001, 0.01 works with cross entropy
-    #loss_function: 'binary_crossentropy'
-    loss_function: 'MeanSquaredError'
+    bias_initializer: 'zeros'   # default is zeros
+   
+    # optimizer
+    optimizer: 'adam'
+    #optimizer: 'SGD'
+    learning_rate: 0.001 # default for Adams is 0.001
 
+    # loss function definiton
+   # loss_function: 'MeanSquaredError'
+   # metrics: ['mean_squared_logarithmic_error']
+   
+    loss_function: 'binary_crossentropy'
+    metrics: ['accuracy']
+    
       
     # compistion of the engine
     number_of_input_neurons:    3
-    number_of_hidden_neurons_layers_1:  5 # 5 5 6
-    number_of_hidden_neurons_layers_2:  0 # 2 0 0
-    # batch                                 5 1
+    number_of_hidden_neurons_layers_1_range: [2, 3, 4, 5 ,6 ,7, 8]
+    number_of_hidden_neurons_layers_2_range:  [0, 2, 3, 4]
+    batch_size:                         1 # 32 default
     number_of_outputs_neurons:  1
-    
- 
  
  
 training_data:
-    training_data_file_name: "logical_xor3.data.train.cvs"
+    #training_data_file_name: "logical_xor3_v2.data.train.cvs"
+    train_with_embedded : "training_with_embedded"
+    training_data_embedded: [
+        [0, 0, 0, 0],
+        [0, 0, 1, 1],
+        [0, 1, 0, 1],
+        [1, 0, 0, 1],
+        [1, 1, 1, 0]
+    ]
+    
+    training_data_embedded_v2: [    
+        [0.04  0.03  0.07  0.01],
+        [0.01  0.03  0.95  0.99],
+        [0.04  0.96  0.01  0.99],
+        [0.98  0.04  0.02  0.99],
+        [0.96  0.97  0.98  0.01]
+    ]
     
 
-    
-  
-validation_data: "logical_or3.data.validate.cvs"   
+
+#validation_data_file_name: "logical_xor3.data.validate.cvs"   
+validation_data_embedded: [
+        [0.04, 0.06, 0.03, 0.0],
+        
+        [0.04, 0.05, 0.96, 1.0],
+        [0.02, 0.93, 0.06, 1.0],
+        [0.04, 0.94, 0.96, 1.0],
+        [0.96, 0.07, 0.06, 1.0],
+        [0.91, 0.08, 0.98, 1.0],
+        [0.94, 0.95, 0.01, 1.0],
+        
+        [0.95, 0.99, 0.96, 0.0],
+        
+        [0.14, 0.16, 0.13, 0.0],
+        
+        [0.14, 0.15, 0.86, 1.0],
+        [0.12, 0.83, 0.16, 1.0],
+        [0.14, 0.84, 0.86, 1.0],
+        [0.86, 0.17, 0.16, 1.0],
+        [0.81, 0.18, 0.88, 1.0],
+        [0.84, 0.85, 0.11, 1.0],
+        
+        [0.85, 0.89, 0.86, 0.0]
+    ]
+
+
+
+
+
+
+
+

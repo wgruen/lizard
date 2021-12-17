@@ -14,6 +14,7 @@ from contextlib import redirect_stdout
 import random
 import numpy as np
 import decimal
+import string
 
 
 import matplotlib.pyplot as plt
@@ -54,17 +55,24 @@ class binary_with_keras():
         
 
     def set_file_names(self):
-                
-        self.model_file_name_base = self.machine_dump_file_name_base + \
-            "-3vgg" \
-            + "--epochs-" \
-            + str(self.number_of_epochs) \
-            + "--dropout-"  \
-            + str(self.dropout_percentage) \
-            + "--l2_reg-" \
-            + str(self.mkernel_regularizer_l2)
-            
+        number_of_input_neurons   = self.configuration["machine"]["number_of_input_neurons"]
+        number_of_hidden_neurons_layers_1  = self.configuration["machine"]["number_of_hidden_neurons_layers_1"]
+        number_of_hidden_neurons_layers_2   = self.configuration["machine"]["number_of_hidden_neurons_layers_2"]
 
+        
+        self.model_file_name_base = "".join(( self.machine_dump_file_name_base,
+            "--ep-",
+            str(self.number_of_epochs), 
+            "--i-",
+            str(number_of_input_neurons),
+            "--hl1-",
+            str(number_of_hidden_neurons_layers_1),
+            "--hl2-",
+            str(number_of_hidden_neurons_layers_2)
+            ))
+             
+             
+ 
         self.model_file_name = self.model_file_name_base + ".bin"
         self.pdf_plots_file_name  = self.model_file_name_base + "_plots.pdf"
         self.doc_summary_file_name  = self.model_file_name_base  + "_summary.pdf"
@@ -75,24 +83,39 @@ class binary_with_keras():
     '''
     def load_dataset(self):
         # Load the training data
-        file_name = self.configuration["training_data"]["training_data_file_name"]
-        print("Input file name: "+ file_name)
+        training_set_inputs = []
         
-        training_set_inputs = np.loadtxt(file_name)
+        if "training_data_file_name" in self.configuration["training_data"]:
+            # load from file
+            file_name = self.configuration["training_data"]["training_data_file_name"]
+            print("Input file name: "+ file_name)
+            training_set_inputs = np.loadtxt(file_name)
+        else:
+            training_data_set = self.configuration["training_data"]["train_with_embedded"]         
+            training_set_inputs = self.configuration["training_data"][training_data_set]
+            training_set_inputs = np.array(training_set_inputs)
+            
+        
+        
         print("Raw training_set_inputs: ****************" + linesep + str(training_set_inputs))
         # extract input data and expected output
         self.trainY = training_set_inputs[:,-1:] # for last column
         self.trainX =  training_set_inputs[:, :-1] # for all but last column
         # Tur output into proper format
-#        training_set_outputs = training_set_outputs.reshape(training_set_outputs.shape[0], 1)
+        #        training_set_outputs = training_set_outputs.reshape(training_set_outputs.shape[0], 1)
         
         print("training_set_inputs: ****************"  + linesep + str(self.trainX))
         print("training_set_outputs: ****************" + linesep + str(self.trainY))
         
     
- 
         # load the validation  data
-        test_data = np.loadtxt(self.configuration["validation_data"])
+        if "validation_data_file_name" in self.configuration:
+            test_data = np.loadtxt(self.configuration["validation_data_file_name"])
+        else:
+            test_data = self.configuration["validation_data_embedded"]
+            test_data = np.array(test_data)
+
+            
         #test_data = np.array(test_data, dtype=np.dtype(decimal.Decimal))
         self.testY = test_data[:,-1:] # for last column
         self.testX = test_data[:, :-1] # for all but last column
@@ -151,8 +174,6 @@ class binary_with_keras():
     CCN was designed to work with two dimensional image data.
     '''
     def define_model(self):
-        
-        
         number_of_input_neurons   = self.configuration["machine"]["number_of_input_neurons"]
         number_of_hidden_neurons_layers_1  = self.configuration["machine"]["number_of_hidden_neurons_layers_1"]
         number_of_hidden_neurons_layers_2   = self.configuration["machine"]["number_of_hidden_neurons_layers_2"]
@@ -160,7 +181,10 @@ class binary_with_keras():
         my_learning_rate = self.configuration["machine"]["learning_rate"]
         my_loss = self.configuration["machine"]["loss_function"] 
         my_bias_initializer = self.configuration["machine"]["bias_initializer"] 
-        
+        my_metrics = self.configuration["machine"]["metrics"] 
+        my_optimizer = self.configuration["machine"]["optimizer"] 
+       
+
         
         # https://machinelearningmastery.com/tutorial-first-neural-network-python-keras/
         
@@ -191,14 +215,19 @@ class binary_with_keras():
         # The output layer should be one Neuron
         self.model.add(Dense(number_of_outputs_neurons, activation='sigmoid'))
      
+        the_optimizer = keras.optimizers.Adam() # just set a default
         # pick an optimizer for gradient descent with momentum optimizer
-        #opt = SGD(lr=0.001, momentum=0.9)
-        my_optimizer = keras.optimizers.Adam(learning_rate=my_learning_rate)
+        if my_optimizer is 'SGD':
+            the_optimizer = SGD(lr=0.001, momentum=0.9)
+            
+        if my_optimizer is 'adam':
+            the_optimizer = keras.optimizers.Adam(learning_rate=my_learning_rate)
         
         
         # compile the model
+        #https://keras.io/api/metrics/
       #  self.compile_output = self.model.compile(optimizer='SGD', loss='binary_crossentropy') #, metrics=['accuracy'])
-        self.compile_output = self.model.compile(loss=my_loss, optimizer=my_optimizer)        
+        self.compile_output = self.model.compile(run_eagerly=True, loss=my_loss, optimizer=the_optimizer,  metrics=[my_metrics])        
         
         print(self.model.summary()) 
      #   sys.exit()
@@ -272,12 +301,16 @@ class binary_with_keras():
         # The history dictionary will have these keys: 
         # ['val_loss', 'val_acc', 'loss', 'acc']
             
-       
 
         # SAVE the trained model
-        self.model.save(self.model_file_name)
+        if not os.path.exists("saved_machines"):
+            os.mkdir("saved_machines")
+        model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
+        self.model.save(model_file_name_and_path)
+    
         self.create_output_pdf()
-        
+    
+        self.predict_data()
         
             
     def create_output_pdf(self):
@@ -304,7 +337,9 @@ class binary_with_keras():
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
         pyplot.plot(self.fit_history.history['loss'], color='blue', label='train model')
-   #     pyplot.plot(self.fit_history.history['val_loss'], color='orange', label='validate model')
+        if "val_loss" in self.fit_history.history:
+            pyplot.plot(self.fit_history.history['val_loss'], color='orange', label='validate model')
+        
         
         # plot accuracy
         #pyplot.subplot(3, 1, 3)
@@ -359,8 +394,20 @@ class binary_with_keras():
         s = f.getvalue()
         #print("model summary:\n", s)
         para = XPreformatted(s, styles["Code"], dedent=0)
-        element.append(para)    
+        element.append(para)  
         
+
+        header = Paragraph("\nThe model metric", styles["Heading2"])
+        element.append(header)
+        f = io.StringIO() 
+        with redirect_stdout(f):
+            self.model.metrics_names
+        s = f.getvalue()
+        #print("model summary:\n", s)
+        para = XPreformatted(s, styles["Code"], dedent=0)
+        element.append(para)          
+        
+       
         header = Paragraph("\nTrain X values", styles["Heading2"])
         element.append(header)
         text = str(self.trainX)       
@@ -413,17 +460,19 @@ class binary_with_keras():
         self.load_dataset()
         self.print_dataset()
         
-        
-        
         ## load a previously stored model
         self.model = keras.models.load_model(self.model_file_name)
     
-    
         ## EVALUATE the previously trained model
         self.testX = self.prepare_data(self.testX)
-        #_, acc = 
-        self.run_history = self.model.evaluate(self.testX, self.testY, verbose=self.verbose)
-        print(self.run_history)
+        self.eval = self.model.evaluate(self.testX, self.testY, verbose=self.verbose)
+        
+        print("=== after eval ===")
+        print(self.testX)
+        print(self.testY)
+        print(self.model.metrics_names)
+        print("result below")
+        print(self.eval)
         
     '''
     The model is evaluated with the test data, which is part of
@@ -434,17 +483,38 @@ class binary_with_keras():
         self.load_dataset()
         self.print_dataset()
         
-        
-        
         ## load a previously stored model
-        self.model = keras.models.load_model(self.model_file_name)
+        model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
+        self.model = keras.models.load_model(model_file_name_and_path)
     
-    
-        ## EVALUATE the previously trained model
+        ## PREDICT with the previously trained model
         self.testX = self.prepare_data(self.testX)
-        #_, acc = 
-        self.run_history = self.model.predict(self.testX, verbose=self.verbose)
-        print(self.run_history)
+        pred = self.model.predict(self.testX, verbose=self.verbose)
+      
+        print("=== after prediction ===")
+        #pred = np.array(pred))
+        np.set_printoptions(formatter={'float_kind':"{:.4f}".format})
+        pred = pred.astype(np.float64)
+        print(pred)
+        
+        # difference to expectations
+        delta = pred - self.testY
+        print("the difference to the expected value")
+        print(delta)
+        
+        # show them side by side
+        side_by_side = np.dstack((pred, delta))
+        print(side_by_side) 
+        
+        # get the total error
+        total_error = np.absolute(delta)
+        print("total error")
+        print(total_error)
+        total_error = sum(total_error)
+        print(total_error)
+
+        
+        return total_error
         
 
 

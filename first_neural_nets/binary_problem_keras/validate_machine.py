@@ -32,9 +32,9 @@ def main(argv):
     configuration["mkernel_regularizer_l2"] = configuration["mkernel_regularizer_l2_range"][0]
     configuration["dropout_percentage"] = configuration["dropout_percentage_range"][0]
                
-    if(configuration["predict_the_model"] == 1):
-        mymodel = binary_with_keras.binary_with_keras(configuration)
-        mymodel.predict_data()
+
+    mymodel = binary_with_keras.binary_with_keras(configuration)
+    mymodel.evaluate_data()
 
     
 if __name__ == '__main__':

@@ -6,8 +6,6 @@ fit_the_model: 1
 predict_the_model: 1
 
 
-number_of_epochs: 10000
-
 # a dropout of 20 percent may be used as starting point for pictures
 # range [0 .. 100]
 #dropout_percentage_range: [10, 20, 30, 40]
@@ -18,20 +16,41 @@ dropout_percentage_range: [10]  # for tests
 #mkernel_regularizer_l2_range: [0.1, 0.01, 0.001, 0.0001]
 mkernel_regularizer_l2_range: [0.1]  # for tests
 
+machine:
+   verbose: 1
+   machine_dump_file_name_base: "logical_xor2_trained"
+   
+   validate_data_during_fitting: 1
 
-verbose: 1
-machine_dump_file_name_base: "logical_xor2_trained"
- 
- 
- 
+   number_of_epochs: 3000
+   shuffle_data: True
+   bias_initializer: 'zeros'   # default is zeros
+   
+   # optimizer
+   optimizer: 'adam'
+   #optimizer: 'SGD'
+   learning_rate: 0.001 # default for Adams is 0.001
+
+   # loss function definiton
+   loss_function: 'MeanSquaredError'
+   metrics: ['mean_squared_logarithmic_error', 'AUC']
+   
+   #loss_function: 'binary_crossentropy'
+   #metrics: ['accuracy']
+    
+    
+   # compistion of the engine
+   number_of_input_neurons:    2
+   number_of_hidden_neurons_layers_1:  2 # 5 5 6
+   number_of_hidden_neurons_layers_2:  0 # 2 0 0
+   batch_size:                         1 # 32 default
+   number_of_outputs_neurons:  1
+   
+
+
+
 training_data:
     training_data_file_name: "logical_xor2.data.train.cvs"
-    number_of_input_neurons:    2
-    number_of_hidden_neurons_layers_1:  2
-    number_of_hidden_neurons_layers_2:  0
-    number_of_outputs_neurons:  1
-    validate_data_during_fitting: 0
-
     
   
 validation_data: "logical_or2.data.validate.cvs"   
