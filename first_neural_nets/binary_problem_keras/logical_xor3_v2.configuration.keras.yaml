@@ -54,7 +54,7 @@ machine:
     
     validate_data_during_fitting: 0
     
-    number_of_epochs: 10000
+    number_of_epochs: 1
     shuffle_data: True
     bias_initializer: 'zeros'   # default is zeros
    

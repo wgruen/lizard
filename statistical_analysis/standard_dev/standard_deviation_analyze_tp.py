@@ -200,7 +200,7 @@ def calculate(data, filename, result, df_summary, cutoff_offset_percent):
     return df_summary
     
 
-def open_file_and_calcualte(file_name, result, df_summary, cutoff_offset_percent):
+def open_file_and_calculate(file_name, result, df_summary, cutoff_offset_percent):
      # open the data file
     file_path = os.path.join(os.getcwd(), file_name)
     test_data = ''
@@ -240,8 +240,6 @@ def create_output_pdf_for_special_values(special_data, element, filename):
         rows, coluums = special_data.shape
         txt = Paragraph("Number of findings: " + str(rows), styles["Normal"])
         element.append(txt)
-        
-        
         
         df = pd.DataFrame(data=special_data, columns=("pos", "row", "column", "value"))
         print("df:\n", df)
@@ -379,12 +377,12 @@ def main(argv):
             if entry.is_file():
                 print(entry.name)
                 full_filename = os.path.join(read_file_or_dir, entry.name)
-                df_summary = open_file_and_calcualte(full_filename,\
+                df_summary = open_file_and_calculate(full_filename,\
                         results, df_summary, cutoff_offset_percent)
                 
                 
     else:
-        df_summary = open_file_and_calcualte(read_full_path,\
+        df_summary = open_file_and_calculate(read_full_path,\
                     results, df_summary, cutoff_offset_percent)
         
     

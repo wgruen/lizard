@@ -26,15 +26,16 @@ styles = getSampleStyleSheet()
 
 
 # example of loading the cifar10 dataset
+from tensorflow import keras as keras
 from keras.datasets import cifar10
-from keras.utils import to_categorical
+from tensorflow.keras.utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Conv2D
 from keras.layers import MaxPooling2D
 from keras.layers import Dense
 from keras.layers import Flatten
 from keras.layers import Dropout
-from keras.optimizers import SGD
+from tensorflow.keras.optimizers import SGD
 from tensorflow import keras
 from keras.regularizers import l2
 
@@ -404,7 +405,7 @@ class myCIFAR10():
     
         
         # pick an optimizer for gradient descent with momentum optimizer
-        opt = SGD(lr=0.001, momentum=0.9)
+        opt = SGD(learning_rate=0.001, momentum=0.9)
         
         # compile the model
         self.compile_output = self.model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])

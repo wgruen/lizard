@@ -62,8 +62,7 @@ machine:
     bias_initializer: 'zeros'   # default is zeros
    
     # optimizer
-    optimizer: 'adam'
-    #optimizer: 'SGD'
+    optimizer: "adam"
     learning_rate: 0.001 # default for Adams is 0.001
 
     # loss function definiton
@@ -84,7 +83,7 @@ machine:
  
 training_data:
     #training_data_file_name: "logical_xor3_v2.data.train.cvs"
-    train_with_embedded : "training_with_embedded"
+    train_with_embedded : "training_data_embedded"
     training_data_embedded: [
         [0, 0, 0, 0],
         [0, 0, 1, 1],

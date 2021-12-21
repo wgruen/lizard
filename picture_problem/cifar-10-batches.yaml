@@ -8,7 +8,7 @@ fit_the_model: 1
 evaluate_the_model: 0
 
 
-number_of_epochs: 1
+number_of_epochs: 10
 
 # a dropout of 20 percent may be used as starting point for pictures
 # range [0 .. 100]

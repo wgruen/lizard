@@ -29,15 +29,16 @@ styles = getSampleStyleSheet()
 
 
 # example of loading the cifar10 dataset
-from keras.utils import to_categorical
+import tensorflow as tf
+from tensorflow import keras
+from keras.utils.np_utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Conv2D
 from keras.layers import MaxPooling2D
 from keras.layers import Dense
 from keras.layers import Flatten
 from keras.layers import Dropout
-from keras.optimizers import SGD
-from tensorflow import keras
+from tensorflow.keras.optimizers import SGD
 from keras.regularizers import l2
 import keras.optimizers 
 
@@ -214,20 +215,26 @@ class binary_with_keras():
         
         # The output layer should be one Neuron
         self.model.add(Dense(number_of_outputs_neurons, activation='sigmoid'))
-     
-        the_optimizer = keras.optimizers.Adam() # just set a default
-        # pick an optimizer for gradient descent with momentum optimizer
-        if my_optimizer is 'SGD':
-            the_optimizer = SGD(lr=0.001, momentum=0.9)
-            
-        if my_optimizer is 'adam':
-            the_optimizer = keras.optimizers.Adam(learning_rate=my_learning_rate)
+
+        #the_optimizer = tf.compat.v1.train.AdamOptimizer(0.01) # just set a default
+        #tf.keras.optimizers.Adam(0.01) 
         
+        # pick an optimizer for gradient descent with momentum optimizer
+        print("my_optimizer")
+        print(my_optimizer)
+    
+        if my_optimizer is 'SGD':
+            self.the_optimizer = SGD(lr=0.001, momentum=0.9)
+        
+        if my_optimizer == 'adam':
+            print("optimizer adams was choosen")
+            self.opt = tf.keras.optimizers.Adam(learning_rate=my_learning_rate)
+        
+        #self.opt = tf.keras.optimizers.Adam(learning_rate=my_learning_rate)
         
         # compile the model
         #https://keras.io/api/metrics/
-      #  self.compile_output = self.model.compile(optimizer='SGD', loss='binary_crossentropy') #, metrics=['accuracy'])
-        self.compile_output = self.model.compile(run_eagerly=True, loss=my_loss, optimizer=the_optimizer,  metrics=[my_metrics])        
+        self.compile_output = self.model.compile(run_eagerly=True, optimizer=self.opt, loss=my_loss,  metrics=[my_metrics]) 
         
         print(self.model.summary()) 
      #   sys.exit()
@@ -306,11 +313,15 @@ class binary_with_keras():
         if not os.path.exists("saved_machines"):
             os.mkdir("saved_machines")
         model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
-        self.model.save(model_file_name_and_path)
+        print("path to save model")
+        print(model_file_name_and_path)
+
+        tf.keras.models.save_model(self.model, model_file_name_and_path)
+        #tf.saved_model.save(self.model, model_file_name_and_path)
     
         self.create_output_pdf()
     
-        self.predict_data()
+        #self.predict_data()
         
             
     def create_output_pdf(self):
@@ -480,16 +491,23 @@ class binary_with_keras():
     '''
     def predict_data(self):
         ### load and prepare the dataset
+        print("enter predcit data")
         self.load_dataset()
         self.print_dataset()
         
         ## load a previously stored model
         model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
-        self.model = keras.models.load_model(model_file_name_and_path)
+        print(model_file_name_and_path)
+     
+     #   self.my_model_predict = tf.saved_model.load(str(model_file_name_and_path))
+
+        self.my_model_predict = tf.keras.models.load_model(model_file_name_and_path)
+
+        #self.my_model_predict = tf.compat.v1.saved_model.load(model_file_name_and_path)
     
         ## PREDICT with the previously trained model
         self.testX = self.prepare_data(self.testX)
-        pred = self.model.predict(self.testX, verbose=self.verbose)
+        pred = self.my_model_predict.predict(self.testX, verbose=self.verbose)
       
         print("=== after prediction ===")
         #pred = np.array(pred))

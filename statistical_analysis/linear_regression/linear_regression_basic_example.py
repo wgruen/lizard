@@ -45,7 +45,7 @@ df_y = df_y.append(df2_26_50, ignore_index=True)
 df_y = df_y.append(df2_26_50, ignore_index=True)
 
 Y = df_y
-print("Y:\n",Y)
+print("Y the dependent variable:\n",Y)
 
 
 
@@ -54,7 +54,7 @@ print("Y:\n",Y)
 
 # adding a constant to the two variables
 X = sm.add_constant(df)
-print("X:\n", X)
+print("X two variables:\n", X)
 
 
 
