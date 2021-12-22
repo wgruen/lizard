@@ -383,6 +383,8 @@ class binary_with_keras():
         element.append(header)
         text = yaml.dump(self.configuration, indent=4)
         print(text)
+        pp = pprint.PrettyPrinter(indent=4)
+        text = pp.pprint(text)
         para = XPreformatted(text, styles["Code"], dedent=0)
         element.append(para)
 
@@ -552,7 +554,11 @@ def main(argv):
     with open(args.input_config_file, 'r') as stream:
         configuration = yaml.safe_load(stream)
         
-    print(yaml.safe_dump(configuration, default_flow_style=False, default_style=None))
+        
+    pp = pprint.PrettyPrinter(indent=4)
+    text = pp.pprint(configuration)
+    #print(yaml.safe_dump(text, default_flow_style=False, default_style=None))
+    print(yaml.safe_dump(text))
     
     if(configuration["fit_the_model"] == 1):
         for kernel_regulror_l1l2 in configuration["mkernel_regularizer_l2_range"]:
