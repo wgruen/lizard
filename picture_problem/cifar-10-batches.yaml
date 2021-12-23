@@ -8,17 +8,17 @@ fit_the_model: 1
 evaluate_the_model: 0
 
 
-number_of_epochs: 10
+number_of_epochs: 10000
 
 # a dropout of 20 percent may be used as starting point for pictures
 # range [0 .. 100]
-#dropout_percentage_range: [10, 20, 30, 40]
-dropout_percentage_range: [10]  # for tests
+dropout_percentage_range: [10, 20, 30, 40]
+#dropout_percentage_range: [10]  # for tests
 
 
 # the default value for the L1L2 regulator is 0.01
-#mkernel_regularizer_l2_range: [0.1, 0.01, 0.001, 0.0001]
-mkernel_regularizer_l2_range: [0.1]  # for tests
+mkernel_regularizer_l2_range: [0.1, 0.01, 0.001, 0.0001]
+#mkernel_regularizer_l2_range: [0.1]  # for tests
 
 
 verbose: 1

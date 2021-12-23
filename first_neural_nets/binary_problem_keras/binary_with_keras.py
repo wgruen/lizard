@@ -317,7 +317,6 @@ class binary_with_keras():
         print(model_file_name_and_path)
 
         tf.keras.models.save_model(self.model, model_file_name_and_path)
-        #tf.saved_model.save(self.model, model_file_name_and_path)
     
         self.create_output_pdf()
     

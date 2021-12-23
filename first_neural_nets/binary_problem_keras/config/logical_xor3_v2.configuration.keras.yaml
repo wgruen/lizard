@@ -50,11 +50,11 @@ mkernel_regularizer_l2_range: [0.1]  # for this problem
 
 machine:
     verbose: 0
-    machine_dump_file_name_base: "logical_xor3_v2_trained-3vgg"
+    machine_dump_file_name_base: "logical_xor3_v2_trained"
     
     validate_data_during_fitting: 0
     
-    number_of_epochs: 1
+    number_of_epochs: 10000
     shuffle_data: True
     bias_initializer: 'zeros'   # default is zeros
    

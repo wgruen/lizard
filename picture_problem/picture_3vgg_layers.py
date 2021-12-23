@@ -465,7 +465,13 @@ class myCIFAR10():
         
 
         # SAVE the trained model
-        self.model.save(self.model_file_name)
+        if not os.path.exists("saved_machines"):
+            os.mkdir("saved_machines")
+        model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
+        print("path to save model")
+        print(model_file_name_and_path)
+
+        tf.keras.models.save_model(self.model, model_file_name_and_path)
         self.create_output_pdf()
         
         
@@ -579,7 +585,7 @@ class myCIFAR10():
         
         
         ## load a previously stored model
-        self.model = keras.models.load_model(self.model_file_name)
+        self.model = tf.keras.models.load_model(self.model_file_name)
     
     
         ## EVALUATE the previously trained model
