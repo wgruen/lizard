@@ -26,6 +26,7 @@ styles = getSampleStyleSheet()
 
 
 # example of loading the cifar10 dataset
+import tensorflow as tf
 from tensorflow import keras as keras
 from keras.datasets import cifar10
 from tensorflow.keras.utils import to_categorical
@@ -36,7 +37,6 @@ from keras.layers import Dense
 from keras.layers import Flatten
 from keras.layers import Dropout
 from tensorflow.keras.optimizers import SGD
-from tensorflow import keras
 from keras.regularizers import l2
 
 
@@ -44,14 +44,12 @@ class myCIFAR10():
     def __init__(self, configuration):
         ### get the parameters
         self.configuration = configuration
-        self.verbose = configuration["verbose"]
+        self.verbose = configuration["machine"]["verbose"]
         self.dropout_percentage = configuration["dropout_percentage"] / 100
         self.mkernel_regularizer_l2 = configuration["mkernel_regularizer_l2"]
-        self.number_of_epochs = configuration["number_of_epochs"]
-        self.machine_dump_file_name_base = configuration["machine_dump_file_name_base"]
-        
-
-    def set_file_names(self):
+        self.number_of_epochs = configuration["machine"]["number_of_epochs"]
+        self.machine_dump_file_name_base = configuration["machine"]["machine_dump_file_name_base"]
+        self.logfile_name = self.machine_dump_file_name_base + ".log"
                 
         self.model_file_name_base = self.machine_dump_file_name_base + \
             "-3vgg" \
@@ -61,6 +59,8 @@ class myCIFAR10():
             + str(self.dropout_percentage) \
             + "--l2_reg-" \
             + str(self.mkernel_regularizer_l2)
+            
+        self.model_file_name_and_path = os.path.join("saved_machines", self.model_file_name_base)
             
 
         self.model_file_name = self.model_file_name_base + ".bin"
@@ -417,9 +417,6 @@ class myCIFAR10():
     
     '''
     def fit_model(self):
-        # set the file names for a run
-        self.set_file_names()
-        
         ### load and prepare the dataset
         self.load_dataset()
         self.print_dataset()
@@ -467,11 +464,8 @@ class myCIFAR10():
         # SAVE the trained model
         if not os.path.exists("saved_machines"):
             os.mkdir("saved_machines")
-        model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
-        print("path to save model")
-        print(model_file_name_and_path)
 
-        tf.keras.models.save_model(self.model, model_file_name_and_path)
+        tf.keras.models.save_model(self.model, self.model_file_name_and_path)
         self.create_output_pdf()
         
         
@@ -585,12 +579,37 @@ class myCIFAR10():
         
         
         ## load a previously stored model
-        self.model = tf.keras.models.load_model(self.model_file_name)
+        self.model = tf.keras.models.load_model(self.model_file_name_and_path)
     
     
         ## EVALUATE the previously trained model
         self.testX = self.prepare_data(self.testX)
         _, acc = self.model.evaluate(self.testX, self.testY, verbose=self.verbose)
+        print(self.model.metrics_names)
+        print(_)
+        print(acc)
+        return acc
+        
+
+
+    '''
+    The model is evaluated with the test data, which is part of
+    the training data
+    '''
+    def predict_data(self):
+        ### load and prepare the dataset
+        self.load_dataset()
+        #print_dataset(self.trainX, self.trainY, self.testX, self.testY)
+        
+        
+        
+        ## load a previously stored model
+        self.model = tf.keras.models.load_model(self.model_file_name_and_path)
+    
+    
+        ## EVALUATE the previously trained model
+        self.testX = self.prepare_data(self.testX)
+        _, acc = self.model.predict(self.testX, verbose=self.verbose)
         
 
 '''

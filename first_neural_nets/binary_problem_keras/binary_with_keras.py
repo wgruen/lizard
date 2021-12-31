@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 import sys
 from matplotlib import pyplot
 import argparse
@@ -13,8 +12,11 @@ from os import linesep
 from contextlib import redirect_stdout
 import random
 import numpy as np
+import pandas as pd
 import decimal
 import string
+from time import gmtime, strftime
+
 
 
 import matplotlib.pyplot as plt
@@ -30,7 +32,7 @@ styles = getSampleStyleSheet()
 
 # example of loading the cifar10 dataset
 import tensorflow as tf
-from tensorflow import keras
+from tensorflow import keras as keras
 from keras.utils.np_utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Conv2D
@@ -41,37 +43,42 @@ from keras.layers import Dropout
 from tensorflow.keras.optimizers import SGD
 from keras.regularizers import l2
 import keras.optimizers 
-
+from keras.callbacks import EarlyStopping
 
 class binary_with_keras():
     def __init__(self, configuration):
         ### get the parameters
         self.configuration = configuration
         self.verbose = configuration["machine"]["verbose"]
-        self.dropout_percentage = configuration["dropout_percentage"] / 100
-        self.mkernel_regularizer_l2 = configuration["mkernel_regularizer_l2"]
+        #self.dropout_percentage = configuration["dropout_percentage"] / 100
+        #self.mkernel_regularizer_l2 = configuration["mkernel_regularizer_l2"]
         self.number_of_epochs = configuration["machine"]["number_of_epochs"]
+        self.learning_rate = configuration["machine"]["learning_rate"]
+        self.batch_size = configuration["machine"]["batch_size"]
+        
         self.machine_dump_file_name_base = configuration["machine"]["machine_dump_file_name_base"]
         self.set_file_names()
+        self.date_and_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        self.date_and_time = "---" + self.date_and_time
+        self.logfile_name = self.machine_dump_file_name_base + ".log"
+        self.model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
         
 
     def set_file_names(self):
-        number_of_input_neurons   = self.configuration["machine"]["number_of_input_neurons"]
-        number_of_hidden_neurons_layers_1  = self.configuration["machine"]["number_of_hidden_neurons_layers_1"]
-        number_of_hidden_neurons_layers_2   = self.configuration["machine"]["number_of_hidden_neurons_layers_2"]
-
-        
         self.model_file_name_base = "".join(( self.machine_dump_file_name_base,
             "--ep-",
             str(self.number_of_epochs), 
             "--i-",
-            str(number_of_input_neurons),
+            str(self.configuration["machine"]["number_of_input_neurons"]),
             "--hl1-",
-            str(number_of_hidden_neurons_layers_1),
+            str(self.configuration["machine"]["number_of_hidden_neurons_layers_1"]),
             "--hl2-",
-            str(number_of_hidden_neurons_layers_2)
+            str(self.configuration["machine"]["number_of_hidden_neurons_layers_2"]),
+            "--lr-",
+            str(self.learning_rate),
+            "--bs-",
+            str(self.batch_size)
             ))
-             
              
  
         self.model_file_name = self.model_file_name_base + ".bin"
@@ -95,14 +102,18 @@ class binary_with_keras():
             training_data_set = self.configuration["training_data"]["train_with_embedded"]         
             training_set_inputs = self.configuration["training_data"][training_data_set]
             training_set_inputs = np.array(training_set_inputs)
-            
+        
+        # prepare for printing
+        self.training_set_inputs_df = pd.DataFrame(training_set_inputs)
         
         
-        print("Raw training_set_inputs: ****************" + linesep + str(training_set_inputs))
+        print("Raw training_set_inputs: ****************")
+
+        
         # extract input data and expected output
         self.trainY = training_set_inputs[:,-1:] # for last column
         self.trainX =  training_set_inputs[:, :-1] # for all but last column
-        # Tur output into proper format
+        # Turn output into proper format
         #        training_set_outputs = training_set_outputs.reshape(training_set_outputs.shape[0], 1)
         
         print("training_set_inputs: ****************"  + linesep + str(self.trainX))
@@ -179,7 +190,6 @@ class binary_with_keras():
         number_of_hidden_neurons_layers_1  = self.configuration["machine"]["number_of_hidden_neurons_layers_1"]
         number_of_hidden_neurons_layers_2   = self.configuration["machine"]["number_of_hidden_neurons_layers_2"]
         number_of_outputs_neurons = self.configuration["machine"]["number_of_outputs_neurons"]
-        my_learning_rate = self.configuration["machine"]["learning_rate"]
         my_loss = self.configuration["machine"]["loss_function"] 
         my_bias_initializer = self.configuration["machine"]["bias_initializer"] 
         my_metrics = self.configuration["machine"]["metrics"] 
@@ -223,14 +233,12 @@ class binary_with_keras():
         print("my_optimizer")
         print(my_optimizer)
     
-        if my_optimizer is 'SGD':
+        if my_optimizer == 'SGD':
             self.the_optimizer = SGD(lr=0.001, momentum=0.9)
         
         if my_optimizer == 'adam':
             print("optimizer adams was choosen")
-            self.opt = tf.keras.optimizers.Adam(learning_rate=my_learning_rate)
-        
-        #self.opt = tf.keras.optimizers.Adam(learning_rate=my_learning_rate)
+            self.opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
         
         # compile the model
         #https://keras.io/api/metrics/
@@ -246,9 +254,6 @@ class binary_with_keras():
     
     '''
     def fit_model(self):
-        # set the file names for a run
-     #   self.set_file_names()
-        
         ### load and prepare the dataset
         self.load_dataset()
         self.print_dataset()
@@ -282,29 +287,15 @@ class binary_with_keras():
         
         self.print_dataset()
         
+        es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
         
-        validate_data_during_fitting   = self.configuration["machine"]["validate_data_during_fitting"] 
-        shuffle_data = self.configuration["machine"]["shuffle_data"]
-        batch_size = self.configuration["machine"]["batch_size"]
-
-        
-        
-        if validate_data_during_fitting is 0:        
-            self.fit_history = self.model.fit(self.trainX, self.trainY,\
-            epochs=self.number_of_epochs,\
-            batch_size=batch_size,\
-            #validation_data=(self.testX, self.testY),\
-            verbose=self.verbose,
-            shuffle=shuffle_data)
-        else:
-            self.fit_history = self.model.fit(self.trainX, self.trainY,\
-            epochs=self.number_of_epochs,\
-            batch_size=batch_size,\
-            validation_data=(self.testX, self.testY),\
-            verbose=self.verbose,
-            shuffle=shuffle_data)
-    
-
+        self.fit_history = self.model.fit(self.trainX, self.trainY,\
+        epochs=self.number_of_epochs,\
+        batch_size=self.batch_size,\
+        validation_data=(self.testX, self.testY),\
+        verbose=self.verbose, \
+        callbacks=[es])
+       
         # The history dictionary will have these keys: 
         # ['val_loss', 'val_acc', 'loss', 'acc']
             
@@ -312,32 +303,40 @@ class binary_with_keras():
         # SAVE the trained model
         if not os.path.exists("saved_machines"):
             os.mkdir("saved_machines")
-        model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
-        print("path to save model")
-        print(model_file_name_and_path)
+        
 
-        tf.keras.models.save_model(self.model, model_file_name_and_path)
+        tf.keras.models.save_model(self.model, self.model_file_name_and_path)
     
         self.create_output_pdf()
-    
-        #self.predict_data()
         
+        
+        #['loss', 'accuracy', 'val_loss', 'val_accuracy'])
+        training_data = {
+            "machine": self.model_file_name_and_path, \
+            "loss" : round(self.fit_history.history['loss'][0], 4), \
+            "accuracy" : round(self.fit_history.history['accuracy'][0], 4), \
+            "val_loss" : round(self.fit_history.history['val_loss'][0], 4), \
+            "val_accuracy" : round(self.fit_history.history['val_accuracy'][0], 4) \
+            }
+            
+            
+        return training_data
             
     def create_output_pdf(self):
         ##############################################
-        ### print plots
+        ### create a PDF with plots
         ##############################################
         if not os.path.exists("output"):
             os.mkdir("output")
-                     
-        pdf_plots  = PdfPages("output/" +  self.pdf_plots_file_name)
+            
+        file_name_and_path = os.path.join("output", self.pdf_plots_file_name + self.date_and_time)
+        pdf_plots  = PdfPages(file_name_and_path)
         
         # SAVE documentation of the trained model
         # The history.history dictionary will have these keys: 
-        # ['val_loss', 'val_acc', 'loss', 'acc']
-        # plot loss
         print("fit_history", self.fit_history.history)
         print(self.fit_history.history.keys())
+        #['loss', 'accuracy', 'val_loss', 'val_accuracy'])
         
     
         
@@ -352,13 +351,13 @@ class binary_with_keras():
         
         
         # plot accuracy
-        #pyplot.subplot(3, 1, 3)
-        #pyplot.title('Classification Accuracy')
-        #plt.ylabel('Accuracy')
-        #plt.xlabel('epoch')
-        #plt.legend(['train', 'test'], loc='upper left')
-        #pyplot.plot(self.fit_history.history['accuracy'], color='blue', label='train_model')
-        #pyplot.plot(self.fit_history.history['val_accuracy'], color='orange', label='validate_model')
+        pyplot.subplot(3, 1, 3)
+        pyplot.title('Classification Accuracy')
+        plt.ylabel('Accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        pyplot.plot(self.fit_history.history['accuracy'], color='blue', label='train_model')
+        pyplot.plot(self.fit_history.history['val_accuracy'], color='orange', label='validate_model')
         
         
         
@@ -370,9 +369,9 @@ class binary_with_keras():
         
         
         ##############################################
-        ### create a text document with data
+        ### create a PDF with the machine details
         ##############################################
-        doc_summary  = SimpleDocTemplate("output/" + self.doc_summary_file_name, pagesize=letter)
+        doc_summary  = SimpleDocTemplate("output/" + self.doc_summary_file_name  + self.date_and_time, pagesize=letter)
     
         element = []
         header = Paragraph("\nSummary of Training Runs", styles["Heading1"])
@@ -389,9 +388,7 @@ class binary_with_keras():
 
         header = Paragraph("\nThe class / runs parameters", styles["Heading2"])
         element.append(header)
-        text = "dropout_percentage: " + str(self.dropout_percentage) + os.linesep +\
-            "mkernel_regularizer_l2: " + str(self.mkernel_regularizer_l2) + os.linesep +\
-            "number_of_epochs: " + str(self.number_of_epochs) 
+        text =  "number_of_epochs: " + str(self.number_of_epochs) 
         print(text)
         para = XPreformatted(text, styles["Code"], dedent=0)
         element.append(para)
@@ -473,7 +470,7 @@ class binary_with_keras():
         self.print_dataset()
         
         ## load a previously stored model
-        self.model = keras.models.load_model(self.model_file_name)
+        self.model = tf.keras.models.load_model(self.model_file_name_and_path)
     
         ## EVALUATE the previously trained model
         self.testX = self.prepare_data(self.testX)
@@ -492,48 +489,57 @@ class binary_with_keras():
     '''
     def predict_data(self):
         ### load and prepare the dataset
-        print("enter predcit data")
+        #print("enter predcit data")
         self.load_dataset()
-        self.print_dataset()
+        #self.print_dataset()
         
         ## load a previously stored model
-        model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
-        print(model_file_name_and_path)
-     
-     #   self.my_model_predict = tf.saved_model.load(str(model_file_name_and_path))
+        self.my_model_predict = tf.keras.models.load_model(self.model_file_name_and_path)
 
-        self.my_model_predict = tf.keras.models.load_model(model_file_name_and_path)
-
-        #self.my_model_predict = tf.compat.v1.saved_model.load(model_file_name_and_path)
-    
         ## PREDICT with the previously trained model
         self.testX = self.prepare_data(self.testX)
         pred = self.my_model_predict.predict(self.testX, verbose=self.verbose)
-      
-        print("=== after prediction ===")
-        #pred = np.array(pred))
-        np.set_printoptions(formatter={'float_kind':"{:.4f}".format})
-        pred = pred.astype(np.float64)
-        print(pred)
         
+        
+        output_str = "==================== new machine run ====================" + os.linesep
+        output_str += self.model_file_name_base + os.linesep
+        
+        output_summary = self.model_file_name_base + "   "
+        
+      
+        np.set_printoptions(formatter={'float_kind':"{:.3f}".format})
+        pred = pred.astype(np.float64)
+        output_str += "=== after prediction ===" + os.linesep
+        output_str += str(pred) + os.linesep
+
         # difference to expectations
         delta = pred - self.testY
-        print("the difference to the expected value")
-        print(delta)
-        
+        output_str += "=== the difference to the expected value ===" + os.linesep
+        output_str += str(delta) + os.linesep
+
         # show them side by side
         side_by_side = np.dstack((pred, delta))
-        print(side_by_side) 
+        output_str += "=== predicted , predicted - expected ===" + os.linesep
+        output_str += str(side_by_side) + os.linesep
         
         # get the total error
         total_error = np.absolute(delta)
-        print("total error")
-        print(total_error)
-        total_error = sum(total_error)
-        print(total_error)
-
+        output_str += "=== absolute delta ===" + os.linesep
+        output_str += str(total_error) + os.linesep
         
-        return total_error
+        total_error_sum = sum(total_error)
+        output_str += "=== the sum of the total error ===" + os.linesep
+        output_str += str(total_error_sum) + os.linesep
+        output_summary += str(total_error_sum) + os.linesep
+        
+        #return output_str, output_summary, 
+        print(total_error_sum)
+        return_value = {
+            "predict": round(total_error_sum[0], 4) \
+            }
+        print(return_value)
+            
+        return return_value
         
 
 
@@ -541,35 +547,7 @@ class binary_with_keras():
 main
 '''
 def main(argv):
-    parser = argparse.ArgumentParser(description='Training and running a small neural network.')
-    parser.add_argument('-i', dest='input_config_file', 
-                        action='store', 
-                        required=True,
-                        help='The yaml file containing configuration')
-    args = parser.parse_args()
-    #print(args)
-       
-    configuration = None
-    with open(args.input_config_file, 'r') as stream:
-        configuration = yaml.safe_load(stream)
-        
-        
-    pp = pprint.PrettyPrinter(indent=4)
-    text = pp.pprint(configuration)
-    #print(yaml.safe_dump(text, default_flow_style=False, default_style=None))
-    print(yaml.safe_dump(text))
-    
-    if(configuration["fit_the_model"] == 1):
-        for kernel_regulror_l1l2 in configuration["mkernel_regularizer_l2_range"]:
-            configuration["mkernel_regularizer_l2"] = kernel_regulror_l1l2
-            for dropout in configuration["dropout_percentage_range"]:
-                configuration["dropout_percentage"] = dropout
-                mymodel = binary_with_keras(configuration)
-                mymodel.fit_model()
-            
-    if(configuration["predict_the_model"] == 1):
-        mymodel = binary_with_keras(configuration)
-        mymodel.predict_data()
+    print("nothing to do here")
 
     
 

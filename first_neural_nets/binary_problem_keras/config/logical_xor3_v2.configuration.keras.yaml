@@ -1,68 +1,33 @@
 Description:
     The model was trained with the dataset "training_data_embedded"
-    
-    
-    The 1st hidden layer with 6 nodes and the 2nd hidden layer with 3 nodes
-    The 1st hidden layer with 8 nodes and the 2nd hidden layer with 4 nodes
-    
-       ['ned-3vgg--epochs-10000--i-3--hl1-2--hl2-0', '[9.6427]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-2--hl2-2', '[9.4937]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-2--hl2-3', '[5.0223]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-2--hl2-4', '[8.0156]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-3--hl2-0', '[8.6548]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-3--hl2-2', '[3.1185]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-3--hl2-3', '[5.3333]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-3--hl2-4', '[2.6941]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-4--hl2-0', '[6.6952]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-4--hl2-2', '[5.3332]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-4--hl2-3', '[0.5578]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-4--hl2-4', '[0.2194]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-5--hl2-0', '[4.1079]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-5--hl2-2', '[6.7117]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-5--hl2-3', '[2.0002]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-5--hl2-4', '[2.8188]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-6--hl2-0', '[3.6864]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-6--hl2-2', '[2.6068]'],
-       
-       ['ned-3vgg--epochs-10000--i-3--hl1-6--hl2-3', '[0.0003]'],
-       
-       ['ned-3vgg--epochs-10000--i-3--hl1-6--hl2-4', '[6.4562]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-7--hl2-0', '[1.0866]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-7--hl2-2', '[6.3187]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-7--hl2-3', '[2.0001]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-7--hl2-4', '[2.0037]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-8--hl2-0', '[1.0009]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-8--hl2-2', '[2.0002]'],
-       ['ned-3vgg--epochs-10000--i-3--hl1-8--hl2-3', '[2.0009]'],
-       
-       ['ned-3vgg--epochs-10000--i-3--hl1-8--hl2-4', '[0.0013]']],
       
 
 # a dropout of 20 percent may be used as starting point for pictures
 # range [0 .. 100]
 #dropout_percentage_range: [10, 20, 30, 40]
-dropout_percentage_range: [10]  # for this problem
+#dropout_percentage_range: [0]  # for this problem
 
 
 # the default value for the L1L2 regulator is 0.01
 #mkernel_regularizer_l2_range: [0.1, 0.01, 0.001, 0.0001]
-mkernel_regularizer_l2_range: [0.1]  # for this problem
+#mkernel_regularizer_l2_range: [0.01]  # for this problem
 
 machine:
     verbose: 0
-    machine_dump_file_name_base: "logical_xor3_v2_trained"
+    machine_dump_file_name_base: "xor3_v2"
     
-    validate_data_during_fitting: 0
+    validate_data_during_fitting: 1
     
-    number_of_epochs: 10000
-    shuffle_data: True
+    number_of_epochs_range: [3000, 5000, 10000]  # 50000 runs to long in Colbab, doesn't finish
+    #number_of_epochs_range: [1]
     bias_initializer: 'zeros'   # default is zeros
    
     # optimizer
-    optimizer: 'adam'
-    #optimizer: 'SGD'
-    learning_rate: 0.001 # default for Adams is 0.001
-
+    optimizer: "adam"
+    #optimizer: "SGD"
+    learning_rate_range: [0.1, 0.01, 0.001, 0.001] # default for Adams is 0.001
+    batch_size_range:  [1, 5]  # 32 default
+    
     # loss function definiton
    # loss_function: 'MeanSquaredError'
    # metrics: ['mean_squared_logarithmic_error']
@@ -71,18 +36,15 @@ machine:
     metrics: ['accuracy']
     
       
-    # compistion of the engine
+    ### compistion of the engine
     number_of_input_neurons:    3
     
     number_of_hidden_neurons_layers_1_range: [2, 3, 4, 5 ,6 ,7, 8]
-    #number_of_hidden_neurons_layers_1_range: [6]
-    
+    #number_of_hidden_neurons_layers_1_range: [8]
     
     number_of_hidden_neurons_layers_2_range:  [0, 2, 3, 4]
-    #number_of_hidden_neurons_layers_2_range:  [3]
+    #number_of_hidden_neurons_layers_2_range:  [0]
     
-    
-    batch_size:                         1 # 32 default
     number_of_outputs_neurons:  1
  
  
@@ -120,14 +82,14 @@ validation_data_embedded: [
         
         [0.95, 0.99, 0.96, 0.0],
         
-        [0.14, 0.16, 0.13, 0.0],
+        [0.14, 0.06, 0.13, 0.0],
         
-        [0.14, 0.15, 0.86, 1.0],
-        [0.12, 0.83, 0.16, 1.0],
-        [0.14, 0.84, 0.86, 1.0],
-        [0.86, 0.17, 0.16, 1.0],
-        [0.81, 0.18, 0.88, 1.0],
-        [0.84, 0.85, 0.11, 1.0],
+        [0.14, 0.15, 0.93, 1.0],
+        [0.12, 0.91, 0.16, 1.0],
+        [0.14, 0.90, 0.89, 1.0],
+        [0.90, 0.17, 0.06, 1.0],
+        [0.91, 0.05, 0.93, 1.0],
+        [0.91, 0.93, 0.11, 1.0],
         
         [0.85, 0.89, 0.86, 0.0]
     ]

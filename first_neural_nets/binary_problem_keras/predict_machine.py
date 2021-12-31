@@ -13,6 +13,7 @@ import numpy as np
 import keras
 import gc
 import pprint
+from time import gmtime, strftime
 
     
 def main(argv):
@@ -34,8 +35,12 @@ def main(argv):
     # or evaluation
     configuration["mkernel_regularizer_l2"] = configuration["mkernel_regularizer_l2_range"][0]
     configuration["dropout_percentage"] = configuration["dropout_percentage_range"][0]
-     
-    results = np.empty((0,2), str)                 
+      
+    result = ""
+    result_summary = ""
+    # on log file for the entire run
+    dt = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    dt = "---" + dt + ".log"
     
     hn_layers_1_range = configuration["machine"]["number_of_hidden_neurons_layers_1_range"]
     for nl1 in hn_layers_1_range:
@@ -46,30 +51,36 @@ def main(argv):
         for nl2 in hn_layers_2_range:
             configuration["machine"]["number_of_hidden_neurons_layers_2"] = nl2
             mymodel = binary_with_keras.binary_with_keras(configuration)
-            total_error = mymodel.predict_data()
-            print(mymodel.model_file_name_base)
-            print(total_error[0])
-            results = np.append(results, np.array([[mymodel.model_file_name_base[20:], str(total_error) ]]), axis=0 )  
+            res, ress = mymodel.predict_data()
+            result += res
+            result_summary += ress
             
-            pp = pprint.PrettyPrinter(indent=0)
-            pp.pprint(results)
-            
-            
-            
-            file_name = mymodel.machine_dump_file_name_base + "_predict.log"
-            with open(file_name, 'w') as fd:
-                content = str(results)
-                fd.write(content)
+            if not os.path.exists("logs"):
+                os.mkdir("logs")
+            file_name = mymodel.logfile_name
+            model_file_name_and_path = os.path.join("logs", file_name + "-predict" + dt)
+            with open(model_file_name_and_path, 'w') as fd:
+                fd.write(result)
                 fd.write("\n")
                 
                 content = yaml.dump(configuration)
                 fd.write(content)
                 
+            model_file_name_and_path = os.path.join("logs", file_name + "-predict_summary" + dt)
+            with open(model_file_name_and_path, 'w') as fd:
+                fd.write(result_summary)
+                fd.write("\n")
+                
+                #content = yaml.dump(configuration)
+                #fd.write(content)
+                
                 
             keras.backend.clear_session()
             gc.collect()     
             del mymodel
-                  
+            
+            
+    print(result_summary)              
 
     
 if __name__ == '__main__':
