@@ -19,9 +19,13 @@ machine:
     validate_data_during_fitting: 1
     
     number_of_epochs_range: [3000, 5000, 10000]  # 50000 runs to long in Colbab, doesn't finish
-    #number_of_epochs_range: [1]
-    bias_initializer: 'zeros'   # default is zeros
-   
+    #number_of_epochs_range: [5]
+    
+    #https://keras.io/api/layers/initializers/
+    #bias_initializer: 'zeros'   # default is zeros
+    bias_initializer: 'RandomNormal'   # default is zeros
+
+
     # optimizer
     optimizer: "adam"
     #optimizer: "SGD"

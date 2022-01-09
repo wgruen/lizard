@@ -7,6 +7,7 @@ import inspect
 import importlib
 import json
 import yaml
+import gzip
 import binary_with_keras
 import numpy as np
 from tensorflow import keras as keras
@@ -30,9 +31,9 @@ def main(argv):
     with open(args.input_config_file, 'r') as stream:
         configuration = yaml.safe_load(stream)
         
-    print(yaml.safe_dump(configuration, default_flow_style=False, default_style=None)) 
+    #print(yaml.safe_dump(configuration, default_flow_style=False, default_style=None)) 
     
-    result = ""
+    result_details = ""
     result_summary = pd.DataFrame()
 
     # on log file for the entire run
@@ -56,49 +57,51 @@ def main(argv):
         
                         mymodel = binary_with_keras.binary_with_keras(configuration)
                         training_data = mymodel.fit_model()
-                    
+                 
                         if not os.path.exists("logs"):
                             os.mkdir("logs")
 
+                        # result details
                         file_name = mymodel.logfile_name
                         model_file_name_and_path = os.path.join("logs", file_name + "-train" + dt)
-                        with open(model_file_name_and_path, 'w') as fd:
-                            fd.write(result)
-                            fd.write("\n")
+                        with open(model_file_name_and_path, 'a') as fd:
+                            fd.write(result_details)
+                            fd.write("*** Next machine ****" + os.linesep)
+                 
                             content = yaml.dump(configuration)
-                            fd.write(content)
+                            fd.write(content + os.linesep)
                        
-
+                        # predict summary
                         predict_delta = mymodel.predict_data()
-                        print("start")
-                        print(training_data)
-                        print(predict_delta)
-                        print("end")
 
+
+                        #print(predict_delta)
                         training_data["predict"] = predict_delta["predict"]
-                        print(training_data)
-                        
-
+                        #print(training_data)
                         training_data = pd.DataFrame([training_data])
-                        print(training_data)
-
+                        #print(training_data)
                         result_summary = result_summary.append(training_data) 
-                        result_summary = result_summary.sort_values(by='val_accuracy')
-                      #   pd.set_option('precision',4)
-                        #result_summary.style.set_precision(4)
-                        #result_summary.style.highlight_min()
-                        print(result_summary)
+                        #print(result_summary)
                        
                         
                         model_file_name_and_path = os.path.join("logs", file_name + "-train-summary" + dt)
                         with open(model_file_name_and_path, 'w') as fd:
-                            dfAsString = result_summary.to_string()
-                            fd.write(dfAsString)
-                            fd.write("\n")
-                
-                        keras.backend.clear_session()
-                        gc.collect()     
-                        del mymodel
+                            for col_name in result_summary.columns: 
+                                fd.write("Next sorted by column: " + col_name + os.linesep)
+                                result_summary_by_val_accuracy = result_summary.sort_values(by=col_name)
+                                dfAsString = result_summary.to_string()
+                                fd.write(dfAsString)
+                                fd.write(os.linesep + os.linesep)
+
+
+
+                        # detailed logs 
+                        model_file_name_and_path = os.path.join("logs", file_name + "-train-detailed-logs" + dt) # + ".gzip")
+                        with open(model_file_name_and_path, 'a') as fd:
+                        #with gzip.GzipFile(model_file_name_and_path, 'w') as fd:
+                            #compressed = zlib.compress(mymodel.logging)
+                            fd.write(mymodel.logging)
+
                       
                  
 if __name__ == '__main__':

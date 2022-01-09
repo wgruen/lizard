@@ -1,4 +1,6 @@
 *.log
 *.bin
 *.pdf
+*.ipynb
 __pycache__
+

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-from matplotlib import pyplot
 import argparse
 import yaml
 import json
@@ -16,7 +15,6 @@ import pandas as pd
 import decimal
 import string
 from time import gmtime, strftime
-
 
 
 import matplotlib.pyplot as plt
@@ -43,18 +41,20 @@ from keras.layers import Dropout
 from tensorflow.keras.optimizers import SGD
 from keras.regularizers import l2
 import keras.optimizers 
-from keras.callbacks import EarlyStopping
+from keras.callbacks import History, EarlyStopping  
 
 class binary_with_keras():
     def __init__(self, configuration):
         ### get the parameters
         self.configuration = configuration
+        self.verbose_logging = configuration["general"]["verbose_logging"]
         self.verbose = configuration["machine"]["verbose"]
         #self.dropout_percentage = configuration["dropout_percentage"] / 100
         #self.mkernel_regularizer_l2 = configuration["mkernel_regularizer_l2"]
         self.number_of_epochs = configuration["machine"]["number_of_epochs"]
         self.learning_rate = configuration["machine"]["learning_rate"]
         self.batch_size = configuration["machine"]["batch_size"]
+        self.loss_function  = self.configuration["machine"]["loss_function"] 
         
         self.machine_dump_file_name_base = configuration["machine"]["machine_dump_file_name_base"]
         self.set_file_names()
@@ -62,7 +62,19 @@ class binary_with_keras():
         self.date_and_time = "---" + self.date_and_time
         self.logfile_name = self.machine_dump_file_name_base + ".log"
         self.model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
+        self.logging = ""
+
+        # cleanup happens 
+        keras.backend.clear_session()
+        gc.collect()    
         
+
+    def __del__(self):
+        del self.model
+        del self.my_model_predict
+        keras.backend.clear_session()
+        gc.collect()     
+        print("deleted model")
 
     def set_file_names(self):
         self.model_file_name_base = "".join(( self.machine_dump_file_name_base,
@@ -82,21 +94,29 @@ class binary_with_keras():
              
  
         self.model_file_name = self.model_file_name_base + ".bin"
-        self.pdf_plots_file_name  = self.model_file_name_base + "_plots.pdf"
-        self.doc_summary_file_name  = self.model_file_name_base  + "_summary.pdf"
+        self.pdf_plots_file_name  = self.model_file_name_base + "_plots"
+        self.doc_summary_file_name  = self.model_file_name_base  + "_summary"
         
+
+    def log_level(self, log_string : str):
+        if self.verbose_logging:
+            print(log_string)
+        else:
+            self.logging += str(log_string)
+    
             
     '''
     load the dataset
     '''
     def load_dataset(self):
         # Load the training data
+        self.log_level("=== enter load_dataset ===" + os.linesep)
         training_set_inputs = []
         
         if "training_data_file_name" in self.configuration["training_data"]:
             # load from file
             file_name = self.configuration["training_data"]["training_data_file_name"]
-            print("Input file name: "+ file_name)
+            log_level("Input file name: "+ file_name + os.linesep)
             training_set_inputs = np.loadtxt(file_name)
         else:
             training_data_set = self.configuration["training_data"]["train_with_embedded"]         
@@ -106,19 +126,9 @@ class binary_with_keras():
         # prepare for printing
         self.training_set_inputs_df = pd.DataFrame(training_set_inputs)
         
-        
-        print("Raw training_set_inputs: ****************")
-
-        
         # extract input data and expected output
         self.trainY = training_set_inputs[:,-1:] # for last column
         self.trainX =  training_set_inputs[:, :-1] # for all but last column
-        # Turn output into proper format
-        #        training_set_outputs = training_set_outputs.reshape(training_set_outputs.shape[0], 1)
-        
-        print("training_set_inputs: ****************"  + linesep + str(self.trainX))
-        print("training_set_outputs: ****************" + linesep + str(self.trainY))
-        
     
         # load the validation  data
         if "validation_data_file_name" in self.configuration:
@@ -130,32 +140,19 @@ class binary_with_keras():
             
         #test_data = np.array(test_data, dtype=np.dtype(decimal.Decimal))
         self.testY = test_data[:,-1:] # for last column
-        self.testX = test_data[:, :-1] # for all but last column
-    
-        # convert into form that can be used to ML algorithm
-        # one hot encode target values
-        # to_categorical returns a binary matrix
-#        self.trainY = to_categorical(self.trainY)
-      #  self.trainX = self.trainX.reshape(-1, 1)
-       # self.trainX = self.trainX.reshape(3, -1)
+        self.testX = test_data[:, :-1] # for all but last column 
 
-#        self.testY = to_categorical(self.testY)    
+        self.print_dataset()
 
 
     def print_dataset(self):
         # summarize loaded dataset
-        
-        print("self.trainX")
-        print(self.trainX)
+        self.log_level("=== enter print_dataset ===" + os.linesep)
+        self.log_level(str("self.trainX") + os.linesep + str(self.trainX) + os.linesep)
+        self.log_level(str("self.trainY") + os.linesep + str(self.trainY) + os.linesep)
+        self.log_level(str("self.testX") + os.linesep + str(self.testX) + os.linesep)
+        self.log_level(str("self.testY") + os.linesep + str(self.testY) + os.linesep)
 
-        print("self.trainY")
-        print(self.trainY)
-        
-        print("self.testX")
-        print(self.testX)
-        
-        print("self.testY")
-        print(self.testY)
     
     
     '''
@@ -167,13 +164,10 @@ class binary_with_keras():
     '''
     def prepare_data(self, data):
         # convert from integers to floats
-#        data_norm = data.astype('float32')
         
         # normalize to range 0-1
  #       data_norm = data_norm / 255.0
-        
-        # return normalized images
-#        return data_norm
+
         return data
  
        
@@ -186,11 +180,11 @@ class binary_with_keras():
     CCN was designed to work with two dimensional image data.
     '''
     def define_model(self):
+        self.log_level("=== enter define model ===" + os.linesep)
         number_of_input_neurons   = self.configuration["machine"]["number_of_input_neurons"]
         number_of_hidden_neurons_layers_1  = self.configuration["machine"]["number_of_hidden_neurons_layers_1"]
         number_of_hidden_neurons_layers_2   = self.configuration["machine"]["number_of_hidden_neurons_layers_2"]
         number_of_outputs_neurons = self.configuration["machine"]["number_of_outputs_neurons"]
-        my_loss = self.configuration["machine"]["loss_function"] 
         my_bias_initializer = self.configuration["machine"]["bias_initializer"] 
         my_metrics = self.configuration["machine"]["metrics"] 
         my_optimizer = self.configuration["machine"]["optimizer"] 
@@ -203,9 +197,6 @@ class binary_with_keras():
        
         # input shape
         # There is one data point for each input
-        # and there should be three Neurons
-        #
-        # the first hidden layer has 4 nodes
         
         self.model.add(Dense(
             number_of_hidden_neurons_layers_1,
@@ -217,7 +208,7 @@ class binary_with_keras():
         # majority of problems :-)
         # Hidden layers are required only, and only if the data 
         # must be separated non-linearly
-        if number_of_hidden_neurons_layers_2 is 1:
+        if number_of_hidden_neurons_layers_2 is not 0:
             self.model.add(Dense(
                 number_of_hidden_neurons_layers_2, 
                 activation='relu',
@@ -226,26 +217,23 @@ class binary_with_keras():
         # The output layer should be one Neuron
         self.model.add(Dense(number_of_outputs_neurons, activation='sigmoid'))
 
-        #the_optimizer = tf.compat.v1.train.AdamOptimizer(0.01) # just set a default
-        #tf.keras.optimizers.Adam(0.01) 
-        
         # pick an optimizer for gradient descent with momentum optimizer
-        print("my_optimizer")
-        print(my_optimizer)
-    
+
         if my_optimizer == 'SGD':
-            self.the_optimizer = SGD(lr=0.001, momentum=0.9)
+            self.opt = SGD(learning_rate=self.learning_rate, momentum=0.9)
         
         if my_optimizer == 'adam':
-            print("optimizer adams was choosen")
             self.opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
         
+        self.log_level("optimizer: " + str(self.opt) + os.linesep)
+
+
         # compile the model
         #https://keras.io/api/metrics/
-        self.compile_output = self.model.compile(run_eagerly=True, optimizer=self.opt, loss=my_loss,  metrics=[my_metrics]) 
+        self.compile_output = self.model.compile(run_eagerly=True, optimizer=self.opt, loss=self.loss_function,  metrics=[my_metrics]) 
         
-        print(self.model.summary()) 
-     #   sys.exit()
+        self.log_level(self.model.summary()) 
+   
      
     
     '''
@@ -255,71 +243,68 @@ class binary_with_keras():
     '''
     def fit_model(self):
         ### load and prepare the dataset
+        self.log_level("=== enter fit model ===" + os.linesep)
         self.load_dataset()
-        self.print_dataset()
         
         # normalize the pixel data for X only
         self.trainX = self.prepare_data(self.trainX)
         self.testX = self.prepare_data(self.testX)
+
+        self.print_dataset()
         
         ### Define and use a model
         self.define_model()
- 
-
-        # todo print to pdf before fitting
         
         ### FIT / TRAIN the model
-        ## Sample - is a set of data, also called Rows Of Data
-        # In the case of CIFAR-10, as sample is the same as the data of one picture
-        # , I guess
-        #
-        ## batch size - is a number of samples (Rows of Data)
-        # which are processed before the model is updated.
-        # The size of a batch must be more than or equal to one and 
-        # less than or equal to the number of samples in the training dataset.
-        #
-        ## epoch - number of complete passes through the training set
-        #
-        ## vaidation data
-        #  Data on which to evaluate the loss of the model 
-        # at the end of each epoch. The model will not be trained on this data.
         # https://machinelearningmastery.com/difference-between-a-batch-and-an-epoch/
-        
-        self.print_dataset()
-        
-        es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
+
+
+        history = History()
+        callbacks = [
+            history, 
+            EarlyStopping(
+                monitor=self.configuration["early_stopping"]["monitor"] ,
+                patience=self.configuration["early_stopping"]["patience"] ,
+                verbose=self.configuration["early_stopping"]["verbose"]
+              #  min_delta=self.configuration["early_stopping"]["min_delta"]
+            )
+        ]
+        #callbacks = [history]
+
+
         
         self.fit_history = self.model.fit(self.trainX, self.trainY,\
-        epochs=self.number_of_epochs,\
-        batch_size=self.batch_size,\
-        validation_data=(self.testX, self.testY),\
-        verbose=self.verbose, \
-        callbacks=[es])
+            epochs=self.number_of_epochs,\
+            batch_size=self.batch_size,\
+            validation_data=(self.testX, self.testY),\
+            verbose=self.verbose, \
+            callbacks=callbacks)
        
-        # The history dictionary will have these keys: 
-        # ['val_loss', 'val_acc', 'loss', 'acc']
-            
 
         # SAVE the trained model
         if not os.path.exists("saved_machines"):
             os.mkdir("saved_machines")
-        
+
+        shutil.rmtree(self.model_file_name_and_path)    
 
         tf.keras.models.save_model(self.model, self.model_file_name_and_path)
-    
-        self.create_output_pdf()
-        
-        
+
+        # for binary_crossentropy
         #['loss', 'accuracy', 'val_loss', 'val_accuracy'])
+        #self.log_level(str(self.model.history.history) + os.linesep)
+        self.epochs = len(history.history['loss'])
         training_data = {
             "machine": self.model_file_name_and_path, \
-            "loss" : round(self.fit_history.history['loss'][0], 4), \
-            "accuracy" : round(self.fit_history.history['accuracy'][0], 4), \
-            "val_loss" : round(self.fit_history.history['val_loss'][0], 4), \
-            "val_accuracy" : round(self.fit_history.history['val_accuracy'][0], 4) \
-            }
-            
-            
+            "epochs" : self.epochs, \
+        }
+
+        for key in self.model.history.history:
+             training_data[key] = round(self.fit_history.history[key][-1], 6)
+
+        self.log_level(json.dumps(training_data, indent=4) + os.linesep)
+        
+        self.create_output_pdf()
+
         return training_data
             
     def create_output_pdf(self):
@@ -329,49 +314,87 @@ class binary_with_keras():
         if not os.path.exists("output"):
             os.mkdir("output")
             
-        file_name_and_path = os.path.join("output", self.pdf_plots_file_name + self.date_and_time)
+        file_name_and_path = os.path.join("output", self.pdf_plots_file_name + self.date_and_time + ".pdf")
         pdf_plots  = PdfPages(file_name_and_path)
+
+        figs = plt.figure()
+        fig = plt.figure() #figsize=(10, 10))
+
         
-        # SAVE documentation of the trained model
-        # The history.history dictionary will have these keys: 
-        print("fit_history", self.fit_history.history)
-        print(self.fit_history.history.keys())
-        #['loss', 'accuracy', 'val_loss', 'val_accuracy'])
+        # SAVE history  of the trained model 
+        #self.log_level("fit_history keys: " + str(self.fit_history.history.keys()))
+        #self.log_level("fit_history" + str(self.fit_history.history))
         
-    
+         
+        plot_num = 321
         
-        pyplot.subplot(3, 1, 1)
-        pyplot.title('Cross Entropy Loss')
-        plt.ylabel('Loss')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'test'], loc='upper left')
-        pyplot.plot(self.fit_history.history['loss'], color='blue', label='train model')
-        if "val_loss" in self.fit_history.history:
-            pyplot.plot(self.fit_history.history['val_loss'], color='orange', label='validate model')
-        
+        if 'loss' in self.fit_history.history:
+            plt.subplot(plot_num)
+            plot_num += 1
+            plt.title('Cross Entropy Loss')
+            plt.ylabel('Loss')
+            plt.xlabel('epoch')
+            #plt.legend(['train', 'test']) 
+            #plt.figure(figsize=(10, 10)) # inches
+         
+            plt.plot(self.fit_history.history['loss'], color='blue', label='train model')
+            plt.plot(self.fit_history.history['val_loss'], color='orange', label='validate model')
+            plt.legend(loc='best')
+      
         
         # plot accuracy
-        pyplot.subplot(3, 1, 3)
-        pyplot.title('Classification Accuracy')
-        plt.ylabel('Accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'test'], loc='upper left')
-        pyplot.plot(self.fit_history.history['accuracy'], color='blue', label='train_model')
-        pyplot.plot(self.fit_history.history['val_accuracy'], color='orange', label='validate_model')
+        if 'auc' in self.fit_history.history:
+            plt.subplot(plot_num)
+            plot_num += 1            
+            plt.title('Classification Accuracy')
+            plt.ylabel('Accuracy')
+            plt.xlabel('epoch')
+            #plt.legend(['train', 'test'])
+            #plt.figure(figsize=(10, 10)) # inches
+          
+            plt.plot(self.fit_history.history['auc'], color='blue', label='train_model')
+            plt.plot(self.fit_history.history['val_auc'], color='orange', label='validate_model')
+            plt.legend(loc='best')
+
+
+        # plot accuracy
+        if 'accuracy' in self.fit_history.history:
+            plt.subplot(plot_num)
+            plot_num += 1
+            plt.title('Classification Accuracy')
+            plt.ylabel('Accuracy')
+            plt.xlabel('epoch')
+            #plt.legend(['train', 'test']')
+            #plt.figure(figsize=(10, 10)) # inches
+           
+            plt.plot(self.fit_history.history['accuracy'], color='blue', label='train_model')
+            plt.plot(self.fit_history.history['val_accuracy'], color='orange', label='validate_model')
+            plt.legend(loc='best')            
         
-        
+       # plot accuracy
+        if 'mean_squared_logarithmic_error' in self.fit_history.history:
+            plt.subplot(plot_num)
+            plot_num += 1
+            plt.title('mean_squared_logarithmic_error')
+            plt.ylabel('Error')
+            plt.xlabel('epoch')
+            #plt.legend(['train', 'test'], loc='upper left')
+            #plt.figure(figsize=(10, 10)) # inches
+            plt.plot(self.fit_history.history['mean_squared_logarithmic_error'], color='blue', label='train_model')
+            plt.plot(self.fit_history.history['val_mean_squared_logarithmic_error'], color='orange', label='validate_model')
+            plt.legend(loc='best')         
+         
         
         # save plot to file
-        pyplot.savefig(pdf_plots, format='pdf') #, bbox_inches='tight')
-        pyplot.plot()
-        pyplot.close()
+        plt.tight_layout() #pad=0.4, w_pad=0.5, h_pad=1.0)
+        pdf_plots.savefig(fig) #, bbox_inches='tight')
         pdf_plots.close()
         
         
         ##############################################
         ### create a PDF with the machine details
         ##############################################
-        doc_summary  = SimpleDocTemplate("output/" + self.doc_summary_file_name  + self.date_and_time, pagesize=letter)
+        doc_summary  = SimpleDocTemplate("output/" + self.doc_summary_file_name  + self.date_and_time + ".pdf", pagesize=letter)
     
         element = []
         header = Paragraph("\nSummary of Training Runs", styles["Heading1"])
@@ -380,16 +403,17 @@ class binary_with_keras():
         header = Paragraph("\nThe script's input parameters", styles["Heading2"])
         element.append(header)
         text = yaml.dump(self.configuration, indent=4)
-        print(text)
-        pp = pprint.PrettyPrinter(indent=4)
-        text = pp.pprint(text)
+        self.log_level(text)
+        #pp = pprint.PrettyPrinter(indent=4)
+        #text = pp.pprint(text)
         para = XPreformatted(text, styles["Code"], dedent=0)
         element.append(para)
 
         header = Paragraph("\nThe class / runs parameters", styles["Heading2"])
         element.append(header)
-        text =  "number_of_epochs: " + str(self.number_of_epochs) 
-        print(text)
+        text =  "number of epochs provided to fit: " + str(self.number_of_epochs) + os.linesep
+        text +=  "number of epochs the machine ran: " + str(self.epochs) + os.linesep
+        self.log_level(text)
         para = XPreformatted(text, styles["Code"], dedent=0)
         element.append(para)
 
@@ -401,7 +425,7 @@ class binary_with_keras():
         with redirect_stdout(f):
             self.model.summary() 
         s = f.getvalue()
-        #print("model summary:\n", s)
+        #self.log_level("model summary:\n", s)
         para = XPreformatted(s, styles["Code"], dedent=0)
         element.append(para)  
         
@@ -412,7 +436,7 @@ class binary_with_keras():
         with redirect_stdout(f):
             self.model.metrics_names
         s = f.getvalue()
-        #print("model summary:\n", s)
+        #self.log_level("metric names:\n", s)
         para = XPreformatted(s, styles["Code"], dedent=0)
         element.append(para)          
         
@@ -467,7 +491,7 @@ class binary_with_keras():
     def evaluate_data(self):
         ### load and prepare the dataset
         self.load_dataset()
-        self.print_dataset()
+
         
         ## load a previously stored model
         self.model = tf.keras.models.load_model(self.model_file_name_and_path)
@@ -476,12 +500,12 @@ class binary_with_keras():
         self.testX = self.prepare_data(self.testX)
         self.eval = self.model.evaluate(self.testX, self.testY, verbose=self.verbose)
         
-        print("=== after eval ===")
-        print(self.testX)
-        print(self.testY)
-        print(self.model.metrics_names)
-        print("result below")
-        print(self.eval)
+        #self.log_level("=== after eval ===")
+        #self.log_level(self.testX)
+        #self.log_level(self.testY)
+        #self.log_level(self.model.metrics_names)
+        #self.log_level("result below")
+        #self.log_level(self.eval)
         
     '''
     The model is evaluated with the test data, which is part of
@@ -489,56 +513,56 @@ class binary_with_keras():
     '''
     def predict_data(self):
         ### load and prepare the dataset
-        #print("enter predcit data")
+        self.log_level("=== enter predcit data ===" + os.linesep)
         self.load_dataset()
-        #self.print_dataset()
         
-        ## load a previously stored model
-        self.my_model_predict = tf.keras.models.load_model(self.model_file_name_and_path)
-
         ## PREDICT with the previously trained model
         self.testX = self.prepare_data(self.testX)
+        self.testY = self.prepare_data(self.testY)
+
+        #self.print_dataset()
+
+        ## load a previously stored model
+        self.my_model_predict = tf.keras.models.load_model(self.model_file_name_and_path)
+        
         pred = self.my_model_predict.predict(self.testX, verbose=self.verbose)
         
-        
-        output_str = "==================== new machine run ====================" + os.linesep
-        output_str += self.model_file_name_base + os.linesep
-        
-        output_summary = self.model_file_name_base + "   "
-        
-      
-        np.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-        pred = pred.astype(np.float64)
-        output_str += "=== after prediction ===" + os.linesep
-        output_str += str(pred) + os.linesep
+        output_details = "==================== new machine run ====================" + os.linesep
+        output_details += self.model_file_name_base + os.linesep
+           
+        output_details += "=== after prediction ===" + os.linesep
+        output_details += np.array_str(pred, precision=6, suppress_small=True) + os.linesep
+ 
+        #print(output_details)
 
         # difference to expectations
-        delta = pred - self.testY
-        output_str += "=== the difference to the expected value ===" + os.linesep
-        output_str += str(delta) + os.linesep
+        delta = np.absolute(pred - self.testY)
+        output_details = "=== the difference to the expected value ===" + os.linesep
+        output_details += str(delta) + os.linesep
+
+        #print(output_details)
 
         # show them side by side
         side_by_side = np.dstack((pred, delta))
-        output_str += "=== predicted , predicted - expected ===" + os.linesep
-        output_str += str(side_by_side) + os.linesep
+        output_details += "=== predicted , predicted - expected ===" + os.linesep
+        output_details += str(side_by_side) + os.linesep
+
+        #print(output_details)        
+
+        total_error_sum = sum(delta)
+
+        output_details += "=== the sum of the total error ===" + os.linesep
+        output_details += str(total_error_sum) + os.linesep
         
-        # get the total error
-        total_error = np.absolute(delta)
-        output_str += "=== absolute delta ===" + os.linesep
-        output_str += str(total_error) + os.linesep
-        
-        total_error_sum = sum(total_error)
-        output_str += "=== the sum of the total error ===" + os.linesep
-        output_str += str(total_error_sum) + os.linesep
-        output_summary += str(total_error_sum) + os.linesep
-        
-        #return output_str, output_summary, 
-        print(total_error_sum)
+        #print(output_details)
+
         return_value = {
-            "predict": round(total_error_sum[0], 4) \
-            }
-        print(return_value)
-            
+            "predict":  round(float(total_error_sum[0]), 6),
+            "predict_details": output_details \
+        }
+
+
+       # print(return_value)    
         return return_value
         
 

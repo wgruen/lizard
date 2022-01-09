@@ -1,56 +1,99 @@
 Description:
     information
 
-
-fit_the_model: 1
-predict_the_model: 1
-
+general:
+    verbose_logging: 0
 
 # a dropout of 20 percent may be used as starting point for pictures
 # range [0 .. 100]
 #dropout_percentage_range: [10, 20, 30, 40]
-dropout_percentage_range: [10]  # for tests
+#dropout_percentage_range: [0]  # for this problem
 
 
 # the default value for the L1L2 regulator is 0.01
 #mkernel_regularizer_l2_range: [0.1, 0.01, 0.001, 0.0001]
-mkernel_regularizer_l2_range: [0.1]  # for tests
+#mkernel_regularizer_l2_range: [0.01]  # for this problem
+
+
+early_stopping:
+    monitor: 'val_loss'
+    patience: 5000
+    verbose: 0
+   # min_delta: 1e-4
 
 machine:
-   verbose: 1
-   machine_dump_file_name_base: "logical_xor2_trained"
-   
-   validate_data_during_fitting: 1
-
-   number_of_epochs: 3000
-   shuffle_data: True
-   bias_initializer: 'zeros'   # default is zeros
-   
-   # optimizer
-   optimizer: 'adam'
-   #optimizer: 'SGD'
-   learning_rate: 0.001 # default for Adams is 0.001
-
-   # loss function definiton
-   loss_function: 'MeanSquaredError'
-   metrics: ['mean_squared_logarithmic_error', 'AUC']
-   
-   #loss_function: 'binary_crossentropy'
-   #metrics: ['accuracy']
+    verbose: 0
+    machine_dump_file_name_base: "xor2"
     
+    validate_data_during_fitting: 1
     
-   # compistion of the engine
-   number_of_input_neurons:    2
-   number_of_hidden_neurons_layers_1:  2 # 5 5 6
-   number_of_hidden_neurons_layers_2:  0 # 2 0 0
-   batch_size:                         1 # 32 default
-   number_of_outputs_neurons:  1
-   
+    number_of_epochs_range: [100000]  #we can use 100 000 - since we do early termination of an epoch
+    #number_of_epochs_range: [2]
+    
+    #https://keras.io/api/layers/initializers/
+    bias_initializer: 'zeros'   # default is zeros
+    #bias_initializer: 'RandomNormal'   # default is zeros
 
+
+    # optimizer
+    #optimizer: "adam"
+    optimizer: "SGD"
+    learning_rate_range: [0.01, 0.001, 0.0001] # default for Adams is 0.001
+    batch_size_range:  [4, 32]  # 32 default
+    
+    # loss function definiton
+   # loss_function: 'MeanSquaredError'
+   # metrics: ['mean_squared_logarithmic_error']
+   
+    #loss_function: 'binary_crossentropy'
+    #metrics: ['accuracy']
+    loss_function: 'MeanSquaredError'
+    metrics: ['mean_squared_logarithmic_error', 'AUC']
+    
+      
+    ### compistion of the engine
+    number_of_input_neurons:    2
+    
+    number_of_hidden_neurons_layers_1_range: [2, 4]
+    #number_of_hidden_neurons_layers_1_range: [2]
+    
+    number_of_hidden_neurons_layers_2_range:  [0, 2, 4]
+    #number_of_hidden_neurons_layers_2_range:  [0]
+    
+    number_of_outputs_neurons:  1
 
 
 training_data:
-    training_data_file_name: "logical_xor2.data.train.cvs"
+    #training_data_file_name: "logical_xor2.data.train.cvs"
+    train_with_embedded : "training_data_embedded"
+
+    training_data_embedded: [
+        [0.04,  0.03,  0.01],
+        [0.04,  0.96,  0.99],
+        [0.98,  0.02,  0.99],
+        [0.96,  0.97,  0.01]
+    ]
+
+    training_data_embedded_v2: [
+        [0, 0, 0],
+        [0, 1, 1],
+        [1, 0, 1],
+        [1, 1, 0]
+    ]
     
   
-validation_data: "logical_or2.data.validate.cvs"   
+#validation_data: "logical_or2.data.validate.cvs"   
+validation_data_embedded: [
+    [0.04, 0.06, 0.01],
+    [0.04, 0.96, 0.99],
+    [0.93, 0.06, 0.99],
+    [0.94, 0.95, 0.01],
+    [0.14, 0.16, 0.01],
+    [0.14, 0.86, 0.99],
+    [0.83, 0.16, 0.99],
+    [0.84, 0.85, 0.01],
+    [0, 0, 0],
+    [0, 1, 1],
+    [1, 0, 1],
+    [1, 1, 0]
+]

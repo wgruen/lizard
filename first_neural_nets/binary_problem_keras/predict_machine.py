@@ -14,6 +14,7 @@ import keras
 import gc
 import pprint
 from time import gmtime, strftime
+import pandas as pd
 
     
 def main(argv):
@@ -25,59 +26,86 @@ def main(argv):
     args = parser.parse_args()
     #print(args)
        
+
     configuration = None
     with open(args.input_config_file, 'r') as stream:
         configuration = yaml.safe_load(stream)
         
-    print(yaml.safe_dump(configuration, default_flow_style=False, default_style=None))
+    print(yaml.safe_dump(configuration, default_flow_style=False, default_style=None)) 
     
-    # constructor needs these, but they are not needed for prediction
-    # or evaluation
-    configuration["mkernel_regularizer_l2"] = configuration["mkernel_regularizer_l2_range"][0]
-    configuration["dropout_percentage"] = configuration["dropout_percentage_range"][0]
-      
-    result = ""
-    result_summary = ""
+    result_details = ""
+    result_summary = pd.DataFrame()
+
     # on log file for the entire run
     dt = strftime("%Y-%m-%d %H:%M:%S", gmtime())
     dt = "---" + dt + ".log"
     
-    hn_layers_1_range = configuration["machine"]["number_of_hidden_neurons_layers_1_range"]
-    for nl1 in hn_layers_1_range:
-        configuration["machine"]["number_of_hidden_neurons_layers_1"] = nl1  
-        hn_layers_2_range = configuration["machine"]["number_of_hidden_neurons_layers_2_range"]
+    for num_neurons_in_layer_1 in configuration["machine"]["number_of_hidden_neurons_layers_1_range"]:
+        configuration["machine"]["number_of_hidden_neurons_layers_1"] = num_neurons_in_layer_1
         
-        
-        for nl2 in hn_layers_2_range:
-            configuration["machine"]["number_of_hidden_neurons_layers_2"] = nl2
-            mymodel = binary_with_keras.binary_with_keras(configuration)
-            res, ress = mymodel.predict_data()
-            result += res
-            result_summary += ress
+        for num_neurons_in_layer_2 in configuration["machine"]["number_of_hidden_neurons_layers_2_range"]:
+            configuration["machine"]["number_of_hidden_neurons_layers_2"] = num_neurons_in_layer_2
             
-            if not os.path.exists("logs"):
-                os.mkdir("logs")
-            file_name = mymodel.logfile_name
-            model_file_name_and_path = os.path.join("logs", file_name + "-predict" + dt)
-            with open(model_file_name_and_path, 'w') as fd:
-                fd.write(result)
-                fd.write("\n")
+            for lrate in configuration["machine"]["learning_rate_range"]:
+                configuration["machine"]["learning_rate"] = lrate
+                    
+                for batch_size in configuration["machine"]["batch_size_range"]:
+                    configuration["machine"]["batch_size"] = batch_size
+                    
+                    for epochs in configuration["machine"]["number_of_epochs_range"]:
+                        configuration["machine"]["number_of_epochs"] = epochs
+        
+
+
+                        mymodel = binary_with_keras.binary_with_keras(configuration)
+
+                        training_data = {
+                            "machine": mymodel.model_file_name_and_path, \
+                        }
+
+                        predict_delta = mymodel.predict_data()
+
+                        # results details
+                        result_details +=  predict_delta["predict_details"]
+                        #print(result_details)
+                       
+
+                        model_file_name_and_path = os.path.join("logs", mymodel.logfile_name + "-predict-details" + dt)
+                        with open(model_file_name_and_path, 'w') as fd:
+                            #dfAsString = result_details.to_string()
+                            fd.write(result_details)
+                            fd.write("\n")
                 
-                content = yaml.dump(configuration)
-                fd.write(content)
+                            content = yaml.dump(configuration)
+                            fd.write(content)
+                       
+                       
+                        # results summary
+                        training_data["predict"] = predict_delta["predict"]
+                        #print(training_data) 
+                        training_data = pd.DataFrame([training_data])
+                        #print(training_data)
+                        result_summary = result_summary.append(training_data) 
+                        result_summary = result_summary.sort_values(by='predict')
+                        result_summary_by_val_accuracy = result_summary.sort_values(by='predict')
+                        #print(result_summary)        
+            
+                        if not os.path.exists("logs"):
+                            os.mkdir("logs")
+
+                        model_file_name_and_path = os.path.join("logs", mymodel.logfile_name + "-predict-summary" + dt)
+                        with open(model_file_name_and_path, 'w') as fd:
+                            dfAsString = result_summary.to_string()
+                            fd.write(dfAsString)
+                            fd.write("\n")
                 
-            model_file_name_and_path = os.path.join("logs", file_name + "-predict_summary" + dt)
-            with open(model_file_name_and_path, 'w') as fd:
-                fd.write(result_summary)
-                fd.write("\n")
-                
-                #content = yaml.dump(configuration)
-                #fd.write(content)
+                            content = yaml.dump(configuration)
+                            fd.write(content)
                 
                 
-            keras.backend.clear_session()
-            gc.collect()     
-            del mymodel
+                        keras.backend.clear_session()
+                        gc.collect()     
+                        del mymodel
             
             
     print(result_summary)              
