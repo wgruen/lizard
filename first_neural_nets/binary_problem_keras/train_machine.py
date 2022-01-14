@@ -9,9 +9,6 @@ import json
 import yaml
 import gzip
 import binary_with_keras
-import numpy as np
-from tensorflow import keras as keras
-import gc
 from time import gmtime, strftime
 import pandas as pd
 
@@ -96,10 +93,8 @@ def main(argv):
 
 
                         # detailed logs 
-                        model_file_name_and_path = os.path.join("logs", file_name + "-train-detailed-logs" + dt) # + ".gzip")
+                        model_file_name_and_path = os.path.join("logs", file_name + "-train-detailed-logs" + dt) 
                         with open(model_file_name_and_path, 'a') as fd:
-                        #with gzip.GzipFile(model_file_name_and_path, 'w') as fd:
-                            #compressed = zlib.compress(mymodel.logging)
                             fd.write(mymodel.logging)
 
                       

@@ -15,7 +15,7 @@ import pandas as pd
 import decimal
 import string
 from time import gmtime, strftime
-
+import shutil
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -29,6 +29,7 @@ styles = getSampleStyleSheet()
 
 
 # example of loading the cifar10 dataset
+import gc
 import tensorflow as tf
 from tensorflow import keras as keras
 from keras.utils.np_utils import to_categorical
@@ -41,7 +42,19 @@ from keras.layers import Dropout
 from tensorflow.keras.optimizers import SGD
 from keras.regularizers import l2
 import keras.optimizers 
-from keras.callbacks import History, EarlyStopping  
+from keras.callbacks import History, EarlyStopping, CSVLogger, LearningRateScheduler
+
+
+change_every_epochs = 100
+change_divide_by = 10
+
+def lr_scheduler(epoch, lr):
+    #print(change_every_epochs)
+    if epoch is not 0 and epoch is change_every_epochs:
+        print("change at epoch:" + str(epoch) + os.linesep)
+        return lr / change_divide_by
+
+    return lr
 
 class binary_with_keras():
     def __init__(self, configuration):
@@ -66,8 +79,18 @@ class binary_with_keras():
 
         # cleanup happens 
         keras.backend.clear_session()
-        gc.collect()    
-        
+        gc.collect() 
+
+        global change_every_epochs
+        global change_divide_by
+        change_every_epochs = self.configuration["learning_rate_scheduler"]["change_every_epochs"]
+        change_divide_by = self.configuration["learning_rate_scheduler"]["change_divide_by"]
+
+    def __del__(self):
+        del self.model
+        del self.my_model_predict
+        keras.backend.clear_session()
+        gc.collect()     
 
     def __del__(self):
         del self.model
@@ -188,8 +211,7 @@ class binary_with_keras():
         my_bias_initializer = self.configuration["machine"]["bias_initializer"] 
         my_metrics = self.configuration["machine"]["metrics"] 
         my_optimizer = self.configuration["machine"]["optimizer"] 
-       
-
+    
         
         # https://machinelearningmastery.com/tutorial-first-neural-network-python-keras/
         
@@ -258,16 +280,25 @@ class binary_with_keras():
         ### FIT / TRAIN the model
         # https://machinelearningmastery.com/difference-between-a-batch-and-an-epoch/
 
-
+        csv_file_name_and_path = os.path.join("output", self.pdf_plots_file_name + self.date_and_time + ".csv")
         history = History()
+        csv_log = CSVLogger(csv_file_name_and_path)
+        
+        early_stopping = EarlyStopping(
+            monitor=self.configuration["early_stopping"]["monitor"] ,
+            patience=self.configuration["early_stopping"]["patience"] ,
+            verbose=self.configuration["early_stopping"]["verbose"]
+            #  min_delta=self.configuration["early_stopping"]["min_delta"]
+        )
+
+        learning_rate_cb = LearningRateScheduler(lr_scheduler)
+
         callbacks = [
             history, 
-            EarlyStopping(
-                monitor=self.configuration["early_stopping"]["monitor"] ,
-                patience=self.configuration["early_stopping"]["patience"] ,
-                verbose=self.configuration["early_stopping"]["verbose"]
-              #  min_delta=self.configuration["early_stopping"]["min_delta"]
-            )
+            csv_log,
+            early_stopping,
+            learning_rate_cb
+
         ]
         #callbacks = [history]
 
@@ -285,7 +316,9 @@ class binary_with_keras():
         if not os.path.exists("saved_machines"):
             os.mkdir("saved_machines")
 
-        shutil.rmtree(self.model_file_name_and_path)    
+        # don't overwrite a model, delete the old model first
+        #print(self.model_file_name_and_path)
+        shutil.rmtree(self.model_file_name_and_path, ignore_errors=True)    
 
         tf.keras.models.save_model(self.model, self.model_file_name_and_path)
 
@@ -299,7 +332,18 @@ class binary_with_keras():
         }
 
         for key in self.model.history.history:
-             training_data[key] = round(self.fit_history.history[key][-1], 6)
+             # tale care of long key strings
+             dict_key = key
+             if key is "mean_squared_logarithmic_error  ":
+                dict_key = "msle"
+             if key is "val_mean_squared_logarithmic_error":
+                dict_key = "val_msle"
+
+             training_data[dict_key] = round(self.fit_history.history[key][-1], 6)
+
+       
+
+
 
         self.log_level(json.dumps(training_data, indent=4) + os.linesep)
         
