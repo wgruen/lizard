@@ -4,15 +4,8 @@
 import sys
 import argparse
 import os
-import inspect
-import importlib
-import json
 import yaml
 import binary_with_keras
-import numpy as np
-import keras
-import gc
-import pprint
 from time import gmtime, strftime
 import pandas as pd
 
@@ -31,7 +24,7 @@ def main(argv):
     with open(args.input_config_file, 'r') as stream:
         configuration = yaml.safe_load(stream)
         
-    print(yaml.safe_dump(configuration, default_flow_style=False, default_style=None)) 
+    #print(yaml.safe_dump(configuration, default_flow_style=False, default_style=None)) 
     
     result_details = ""
     result_summary = pd.DataFrame()
@@ -71,7 +64,7 @@ def main(argv):
                        
 
                         model_file_name_and_path = os.path.join("logs", mymodel.logfile_name + "-predict-details" + dt)
-                        with open(model_file_name_and_path, 'w') as fd:
+                        with open(model_file_name_and_path, 'a') as fd:
                             #dfAsString = result_details.to_string()
                             fd.write(result_details)
                             fd.write("\n")
@@ -81,30 +74,34 @@ def main(argv):
                        
                        
                         # results summary
-                        training_data["predict"] = predict_delta["predict"]
-                        #print(training_data) 
-                        training_data = pd.DataFrame([training_data])
-                        #print(training_data)
-                        result_summary = result_summary.append(training_data) 
-                        result_summary = result_summary.sort_values(by='predict')
-                        result_summary_by_val_accuracy = result_summary.sort_values(by='predict')
+                        if "predict" in training_data:
+                            training_data["predict"] = predict_delta["predict"]
+                            #print(training_data) 
+                            training_data = pd.DataFrame([training_data])
+                            #print(training_data)
+                            result_summary = result_summary.append(training_data) 
+                            result_summary = result_summary.sort_values(by='predict')
+                            result_summary_by_val_accuracy = result_summary.sort_values(by='predict')
                         #print(result_summary)        
             
                         if not os.path.exists("logs"):
                             os.mkdir("logs")
 
                         model_file_name_and_path = os.path.join("logs", mymodel.logfile_name + "-predict-summary" + dt)
-                        with open(model_file_name_and_path, 'w') as fd:
-                            dfAsString = result_summary.to_string()
-                            fd.write(dfAsString)
-                            fd.write("\n")
+                        with open(model_file_name_and_path, 'a') as fd:
+                            fd.write(predict_delta["predict_summary"])
+                            
+
+                           # dfAsString = result_summary.to_string()
+                           # fd.write(dfAsString)
+                           # fd.write("\n")
                 
-                            content = yaml.dump(configuration)
-                            fd.write(content)
-                
-                
-                        keras.backend.clear_session()
-                        gc.collect()     
+                            #content = yaml.dump(configuration)
+                            #fd.write(content)
+
+                        if "predict_summary" in predict_delta:
+                            print(predict_delta["predict_summary"])
+     
                         del mymodel
             
             

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from re import I
 import sys
 import argparse
 import yaml
@@ -31,18 +32,14 @@ styles = getSampleStyleSheet()
 # example of loading the cifar10 dataset
 import gc
 import tensorflow as tf
-from tensorflow import keras as keras
-from keras.utils.np_utils import to_categorical
-from keras.models import Sequential
-from keras.layers import Conv2D
-from keras.layers import MaxPooling2D
-from keras.layers import Dense
-from keras.layers import Flatten
-from keras.layers import Dropout
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
 from tensorflow.keras.optimizers import SGD
-from keras.regularizers import l2
-import keras.optimizers 
-from keras.callbacks import History, EarlyStopping, CSVLogger, LearningRateScheduler
+from tensorflow.keras.regularizers import l2
+#from keras import optimizers 
+from tensorflow.keras.callbacks import History, EarlyStopping, CSVLogger, LearningRateScheduler
 
 
 change_every_epochs = 100
@@ -77,27 +74,44 @@ class binary_with_keras():
         self.model_file_name_and_path = os.path.join("saved_machines", self.model_file_name)
         self.logging = ""
 
-        # cleanup happens 
-        keras.backend.clear_session()
+        # cleanup happens here
+        tf.keras.backend.clear_session()
         gc.collect() 
+
+        tf.get_logger().setLevel('WARNING')
 
         global change_every_epochs
         global change_divide_by
         change_every_epochs = self.configuration["learning_rate_scheduler"]["change_every_epochs"]
         change_divide_by = self.configuration["learning_rate_scheduler"]["change_divide_by"]
 
-    def __del__(self):
-        del self.model
-        del self.my_model_predict
-        keras.backend.clear_session()
-        gc.collect()     
+        if not os.path.exists("output"):
+          os.mkdir("output")
+
+        self.use_tpu = False
+        try:
+            resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='')
+            #strategy = tf.distribute.TPUStrategy(resolver)
+
+
+            tf.config.list_physical_devices('TPU') 
+            tf.tpu.experimental.initialize_tpu_system(resolver)
+            print("All devices: ", tf.config.list_logical_devices('TPU'))
+            self.use_tpu = True
+
+        except:
+            pass
+            print("not connected to a TPU")
+    
 
     def __del__(self):
-        del self.model
-        del self.my_model_predict
-        keras.backend.clear_session()
+        if hasattr(self, "model") is True:
+            del self.model
+        if hasattr(self, "my_model_predict") is True:
+            del self.my_model_predict
+        
+        tf.keras.backend.clear_session()
         gc.collect()     
-        print("deleted model")
 
     def set_file_names(self):
         self.model_file_name_base = "".join(( self.machine_dump_file_name_base,
@@ -139,7 +153,7 @@ class binary_with_keras():
         if "training_data_file_name" in self.configuration["training_data"]:
             # load from file
             file_name = self.configuration["training_data"]["training_data_file_name"]
-            log_level("Input file name: "+ file_name + os.linesep)
+            self.log_level("Input file name: "+ file_name + os.linesep)
             training_set_inputs = np.loadtxt(file_name)
         else:
             training_data_set = self.configuration["training_data"]["train_with_embedded"]         
@@ -165,7 +179,7 @@ class binary_with_keras():
         self.testY = test_data[:,-1:] # for last column
         self.testX = test_data[:, :-1] # for all but last column 
 
-        self.print_dataset()
+        #self.print_dataset()
 
 
     def print_dataset(self):
@@ -264,6 +278,15 @@ class binary_with_keras():
     
     '''
     def fit_model(self):
+       
+        # 
+        if not os.path.exists("saved_machines"):
+            os.mkdir("saved_machines")
+
+        # don't overwrite a model, delete the old model first
+        #print(self.model_file_name_and_path)
+        shutil.rmtree(self.model_file_name_and_path, ignore_errors=True)   
+       
         ### load and prepare the dataset
         self.log_level("=== enter fit model ===" + os.linesep)
         self.load_dataset()
@@ -280,9 +303,10 @@ class binary_with_keras():
         ### FIT / TRAIN the model
         # https://machinelearningmastery.com/difference-between-a-batch-and-an-epoch/
 
-        csv_file_name_and_path = os.path.join("output", self.pdf_plots_file_name + self.date_and_time + ".csv")
         history = History()
-        csv_log = CSVLogger(csv_file_name_and_path)
+
+        csv_file_name_and_path = os.path.join("output", self.pdf_plots_file_name + self.date_and_time + ".csv")
+        #csv_log = CSVLogger(csv_file_name_and_path)
         
         early_stopping = EarlyStopping(
             monitor=self.configuration["early_stopping"]["monitor"] ,
@@ -295,37 +319,47 @@ class binary_with_keras():
 
         callbacks = [
             history, 
-            csv_log,
+            #csv_log,
             early_stopping,
             learning_rate_cb
-
         ]
-        #callbacks = [history]
+
+        if self.use_tpu is False:
+            callbacks.append([CSVLogger(csv_file_name_and_path)])
 
 
+        trainx_tensor = tf.constant(self.trainX)
+        trainy_tensor = tf.constant(self.trainY)
+        testx_tensor = tf.constant(self.testX)
+        testy_tensor = tf.constant(self.testY)
+
+
+        #print("after making it a Tensor")
+        #print(trainx_tensor)
+        #print(trainy_tensor)
+        #print(testx_tensor)
+        #print(testy_tensor)
+        #print(self.batch_size)
+        #print(self.number_of_epochs)
         
-        self.fit_history = self.model.fit(self.trainX, self.trainY,\
+        self.fit_history = self.model.fit(trainx_tensor, trainy_tensor,\
             epochs=self.number_of_epochs,\
             batch_size=self.batch_size,\
-            validation_data=(self.testX, self.testY),\
+            validation_data=(testx_tensor, testy_tensor),\
             verbose=self.verbose, \
             callbacks=callbacks)
-       
-
-        # SAVE the trained model
-        if not os.path.exists("saved_machines"):
-            os.mkdir("saved_machines")
-
-        # don't overwrite a model, delete the old model first
-        #print(self.model_file_name_and_path)
-        shutil.rmtree(self.model_file_name_and_path, ignore_errors=True)    
-
-        tf.keras.models.save_model(self.model, self.model_file_name_and_path)
+          
+        if self.use_tpu is False:
+            tf.keras.models.save_model(self.model, self.model_file_name_and_path)
 
         # for binary_crossentropy
         #['loss', 'accuracy', 'val_loss', 'val_accuracy'])
+        #print(history.history)
         #self.log_level(str(self.model.history.history) + os.linesep)
-        self.epochs = len(history.history['loss'])
+        self.epochs = 0
+        if "loss"  in history.history:
+            self.epochs = len(history.history['loss'])
+
         training_data = {
             "machine": self.model_file_name_and_path, \
             "epochs" : self.epochs, \
@@ -334,7 +368,7 @@ class binary_with_keras():
         for key in self.model.history.history:
              # tale care of long key strings
              dict_key = key
-             if key is "mean_squared_logarithmic_error  ":
+             if key is "mean_squared_logarithmic_error":
                 dict_key = "msle"
              if key is "val_mean_squared_logarithmic_error":
                 dict_key = "val_msle"
@@ -342,9 +376,6 @@ class binary_with_keras():
              training_data[dict_key] = round(self.fit_history.history[key][-1], 6)
 
        
-
-
-
         self.log_level(json.dumps(training_data, indent=4) + os.linesep)
         
         self.create_output_pdf()
@@ -355,8 +386,9 @@ class binary_with_keras():
         ##############################################
         ### create a PDF with plots
         ##############################################
-        if not os.path.exists("output"):
-            os.mkdir("output")
+
+        if self.use_tpu is True:
+            return
             
         file_name_and_path = os.path.join("output", self.pdf_plots_file_name + self.date_and_time + ".pdf")
         pdf_plots  = PdfPages(file_name_and_path)
@@ -565,14 +597,32 @@ class binary_with_keras():
         self.testY = self.prepare_data(self.testY)
 
         #self.print_dataset()
+        testx_tensor = tf.constant(self.testX)
+        #testy_tensor = tf.constant(self.testY)
 
-        ## load a previously stored model
-        self.my_model_predict = tf.keras.models.load_model(self.model_file_name_and_path)
-        
-        pred = self.my_model_predict.predict(self.testX, verbose=self.verbose)
-        
         output_details = "==================== new machine run ====================" + os.linesep
         output_details += self.model_file_name_base + os.linesep
+        predict_summary = self.model_file_name_base
+        
+        if self.use_tpu is False:
+            ## load a previously stored model
+            if not os.path.exists(self.model_file_name_and_path):
+                output_details = "=== can't load machine - the file is not available" + os.linesep
+                output_details += self.model_file_name_and_path + os.linesep
+                return_value = { 
+                    "predict_details": output_details, 
+                    "predict_summary": output_details
+                }
+
+                return return_value
+
+       
+            self.my_model_predict = tf.keras.models.load_model(self.model_file_name_and_path)
+        else:
+            self.my_model_predict = self.model
+        
+        pred = self.my_model_predict.predict(testx_tensor, verbose=self.verbose)
+        
            
         output_details += "=== after prediction ===" + os.linesep
         output_details += np.array_str(pred, precision=6, suppress_small=True) + os.linesep
@@ -600,9 +650,13 @@ class binary_with_keras():
         
         #print(output_details)
 
+        predict_summary += "\ttotal_error_sum: \t" + str(total_error_sum) + os.linesep 
+
         return_value = {
-            "predict":  round(float(total_error_sum[0]), 6),
-            "predict_details": output_details \
+            "predict":  round(float(total_error_sum[0]), 6), 
+            "predict_details": output_details,  
+            "delta": delta, 
+            "predict_summary": predict_summary
         }
 
 

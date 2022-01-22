@@ -14,6 +14,7 @@ import pandas as pd
 
 
 
+
     
 def main(argv):
     parser = argparse.ArgumentParser(description='Training and running a small neural network.')
@@ -55,18 +56,22 @@ def main(argv):
                         mymodel = binary_with_keras.binary_with_keras(configuration)
                         training_data = mymodel.fit_model()
                  
-                        if not os.path.exists("logs"):
-                            os.mkdir("logs")
 
-                        # result details
-                        file_name = mymodel.logfile_name
-                        model_file_name_and_path = os.path.join("logs", file_name + "-train" + dt)
-                        with open(model_file_name_and_path, 'a') as fd:
-                            fd.write(result_details)
-                            fd.write("*** Next machine ****" + os.linesep)
+                        # currently not logging to files
+                        # when running on a TPU
+                        if mymodel.use_tpu is False:
+                            if not os.path.exists("logs"):
+                                os.mkdir("logs")
+
+                            # result details
+                            file_name = mymodel.logfile_name
+                            model_file_name_and_path = os.path.join("logs", file_name + "-train" + dt)
+                            with open(model_file_name_and_path, 'a') as fd:
+                                fd.write(result_details)
+                                fd.write("*** Next machine ****" + os.linesep)
                  
-                            content = yaml.dump(configuration)
-                            fd.write(content + os.linesep)
+                                content = yaml.dump(configuration)
+                                fd.write(content + os.linesep)
                        
                         # predict summary
                         predict_delta = mymodel.predict_data()
@@ -80,22 +85,27 @@ def main(argv):
                         result_summary = result_summary.append(training_data) 
                         #print(result_summary)
                        
-                        
-                        model_file_name_and_path = os.path.join("logs", file_name + "-train-summary" + dt)
-                        with open(model_file_name_and_path, 'w') as fd:
-                            for col_name in result_summary.columns: 
-                                fd.write("Next sorted by column: " + col_name + os.linesep)
-                                result_summary_by_val_accuracy = result_summary.sort_values(by=col_name)
-                                dfAsString = result_summary.to_string()
-                                fd.write(dfAsString)
-                                fd.write(os.linesep + os.linesep)
+                        if mymodel.use_tpu is False:
+                            model_file_name_and_path = os.path.join("logs", file_name + "-train-summary" + dt)
+                            with open(model_file_name_and_path, 'w') as fd:
+                                for col_name in result_summary.columns: 
+                                    fd.write("Next sorted by column: " + col_name + os.linesep)
+                                    result_summary_by_val_accuracy = result_summary.sort_values(by=col_name)
+                                    dfAsString = result_summary_by_val_accuracy.to_string()
+                                    fd.write(dfAsString)
+                                    fd.write(os.linesep + os.linesep)
+
+                        # for the notebooks, let's get output after each traning's run
+                        print(result_summary.to_string())
 
 
+                        if mymodel.use_tpu is False:
+                            # detailed logs 
+                            model_file_name_and_path = os.path.join("logs", file_name + "-train-detailed-logs" + dt) 
+                            with open(model_file_name_and_path, 'a') as fd:
+                                fd.write(mymodel.logging)
 
-                        # detailed logs 
-                        model_file_name_and_path = os.path.join("logs", file_name + "-train-detailed-logs" + dt) 
-                        with open(model_file_name_and_path, 'a') as fd:
-                            fd.write(mymodel.logging)
+                        del mymodel
 
                       
                  

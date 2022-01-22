@@ -11,7 +11,7 @@ The data file format:
 
 
 training_data:
-    training_data_file_name: "logical_or.data.train.cvs"
+    training_data_file_name: "logical_or3.data.train.cvs"
     number_of_input_neurons:    3
     number_of_hidden_neurons:   4
     number_of_hidden_layers:    1   
@@ -19,6 +19,6 @@ training_data:
     number_of_training_iterations: 100000
     
 
-machine_dump_file_name: "logical_or.trained.machine.bin"
+machine_dump_file_name: "logical_or3.trained.machine.bin"
     
-validation_data: "logical_or.data.validate.cvs"
+validation_data: "logical_or3.data.validate.cvs"
