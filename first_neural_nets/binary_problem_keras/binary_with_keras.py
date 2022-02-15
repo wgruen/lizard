@@ -368,6 +368,7 @@ class binary_with_keras():
         for key in self.model.history.history:
              # tale care of long key strings
              dict_key = key
+             print(dict_key)
              if key is "mean_squared_logarithmic_error":
                 dict_key = "msle"
              if key is "val_mean_squared_logarithmic_error":

@@ -40,6 +40,7 @@ machine:
     #bias_initializer: 'RandomNormal'   # default is zeros
 
 
+
     # optimizer
     #optimizer: "adam"
     optimizer: "SGD"
@@ -60,7 +61,7 @@ machine:
     ### compistion of the engine
     number_of_input_neurons:    2
     
-    number_of_hidden_neurons_layers_1_range: [2, 3, 4]
+    number_of_hidden_neurons_layers_1_range: [2, 4] #, 3, 4]
     #number_of_hidden_neurons_layers_1_range: [2]
     
     number_of_hidden_neurons_layers_2_range:  [0]
