@@ -17,9 +17,9 @@ general:
 
 early_stopping:
     monitor: 'val_loss'
-    patience: 20000
+    patience: 2000
     verbose: 0
-    min_delta: 1e-8
+    min_delta: 1e6
 
 learning_rate_scheduler:
     change_every_epochs: 10000  # looking at priminilary data, change at 10000

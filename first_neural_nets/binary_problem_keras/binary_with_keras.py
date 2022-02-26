@@ -156,9 +156,10 @@ class binary_with_keras():
             self.log_level("Input file name: "+ file_name + os.linesep)
             training_set_inputs = np.loadtxt(file_name)
         else:
-            training_data_set = self.configuration["training_data"]["train_with_embedded"]         
+            training_data_set = self.configuration["training_data"]["train_with_embedded"]   
             training_set_inputs = self.configuration["training_data"][training_data_set]
             training_set_inputs = np.array(training_set_inputs)
+        
         
         # prepare for printing
         self.training_set_inputs_df = pd.DataFrame(training_set_inputs)
@@ -342,12 +343,21 @@ class binary_with_keras():
         #print(self.batch_size)
         #print(self.number_of_epochs)
         
-        self.fit_history = self.model.fit(trainx_tensor, trainy_tensor,\
-            epochs=self.number_of_epochs,\
-            batch_size=self.batch_size,\
-            validation_data=(testx_tensor, testy_tensor),\
-            verbose=self.verbose, \
-            callbacks=callbacks)
+        if  "validation_split" in self.configuration["machine"]:
+           self.fit_history = self.model.fit(trainx_tensor, trainy_tensor,\
+                epochs=self.number_of_epochs,\
+                batch_size=self.batch_size,\
+                validation_split = self.configuration["machine"]["validation_split"], \
+                verbose=self.verbose, \
+                callbacks=callbacks)
+         
+        else:
+            self.fit_history = self.model.fit(trainx_tensor, trainy_tensor,\
+                epochs=self.number_of_epochs,\
+                batch_size=self.batch_size,\
+                validation_data = (testx_tensor, testy_tensor),\
+                verbose=self.verbose, \
+                callbacks=callbacks)
           
         if self.use_tpu is False:
             tf.keras.models.save_model(self.model, self.model_file_name_and_path)

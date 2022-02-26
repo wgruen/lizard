@@ -61,8 +61,14 @@ def main(argv):
                         # results details
                         result_details +=  predict_delta["predict_details"]
                         #print(result_details)
-                       
-
+                        
+                        # currently not logging to files
+                        # when running on a TPU
+                        if mymodel.use_tpu is False:
+                            if not os.path.exists("logs"):
+                                os.mkdir("logs")
+                                
+                                
                         model_file_name_and_path = os.path.join("logs", mymodel.logfile_name + "-predict-details" + dt)
                         with open(model_file_name_and_path, 'a') as fd:
                             #dfAsString = result_details.to_string()

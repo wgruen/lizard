@@ -2,4 +2,5 @@
 *.bin
 *.pdf
 __pycache__
+*.ipynb
 
